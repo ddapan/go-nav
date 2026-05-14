@@ -32,7 +32,7 @@ export const DEFAULT_NAV: NavConfig = {
 		},
 		{
 			label: "作者 GitHub",
-			href: "https://github.com/gotab-cn/go-nav",
+			href: "https://github.com/dengxiwang/go-nav",
 		},
 		{
 			label: " GoTab 新标签页",
@@ -150,7 +150,9 @@ export function writeNav(v: NavConfig) {
 export function saveUpload(fileName: string, bytes: Buffer): string {
 	fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 	const ext = sanitizeExtension(path.extname(fileName)) || ".bin";
-	const base = createUploadBaseName(path.basename(fileName, path.extname(fileName)));
+	const base = createUploadBaseName(
+		path.basename(fileName, path.extname(fileName)),
+	);
 	let unique = "";
 	do {
 		unique = `${base}-${Math.random().toString(36).slice(2, 8)}${ext}`;

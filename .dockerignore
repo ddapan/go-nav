@@ -16,6 +16,4 @@ next-env.d.ts
 .heroui-docs
 .vscode
 
-data/uploads/*
-!data/uploads/.gitkeep
 public/uploads

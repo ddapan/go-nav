@@ -254,11 +254,11 @@ export function BackupEditor() {
 			</section>
 
 			{/* 清理预览确认弹窗 */}
-			<Modal
-				isOpen={preview !== null}
-				onOpenChange={(open) => !open && !cleaning && setPreview(null)}
-			>
-				<Modal.Backdrop>
+			<Modal>
+				<Modal.Backdrop
+					isOpen={preview !== null}
+					onOpenChange={(open) => !open && !cleaning && setPreview(null)}
+				>
 					<Modal.Container>
 						<Modal.Dialog>
 							<Modal.Header>

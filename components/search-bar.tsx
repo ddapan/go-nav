@@ -12,9 +12,10 @@ import {
 	useTransition,
 } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
-import type { NavSite, SearchEngine } from "@/types";
+import type { LayoutConfig, NavSite, SearchEngine } from "@/types";
 import { recordVisit } from "@/hooks/use-recent-visits";
 import { getIconImageSrc } from "@/lib/icon";
+import { SiteIcon } from "./site-icon";
 import fetchJsonp from "fetch-jsonp";
 
 interface SuggestionItem {
@@ -40,6 +41,7 @@ export function SearchBar({
 	engineId: externalEngineId,
 	onEngineChange,
 	showEngineSelector = true,
+	layout,
 }: {
 	engines: SearchEngine[];
 	defaultEngine: string;
@@ -52,6 +54,7 @@ export function SearchBar({
 	engineId?: Key | null;
 	onEngineChange?: (id: Key | null) => void;
 	showEngineSelector?: boolean;
+	layout?: Pick<LayoutConfig, "defaultIconPadding" | "iconBorderRadius">;
 }) {
 	const engineOptions = useMemo(() => {
 		const base: SearchEngine[] = [];
@@ -518,7 +521,6 @@ export function SearchBar({
 							renderEmptyState={() => <EmptyState>未找到匹配的网站</EmptyState>}
 						>
 							{results.map((r, index) => {
-								const iconSrc = getIconImageSrc(r.icon);
 								return (
 									<ListBox.Item
 										key={`${r.categoryId}-${r.url}`}
@@ -529,21 +531,14 @@ export function SearchBar({
 											activeIndex === index ? "bg-default/70 text-foreground" : ""
 										}`}
 									>
-										<span
-											className="inline-flex h-4 w-4 shrink-0 items-center justify-center text-center text-sm"
-											aria-hidden
-										>
-											{iconSrc ? (
-												// eslint-disable-next-line @next/next/no-img-element
-												<img
-													src={iconSrc}
-													alt=""
-													className="h-4 w-4 rounded object-contain"
-												/>
-											) : (
-												r.icon || "🔗"
-											)}
-										</span>
+										<SiteIcon
+											site={r}
+											layout={layout}
+											size={24}
+											className="text-[11px]!"
+											textClassName="text-[11px]!"
+											initialClassName="text-[10px]!"
+										/>
 										<div className="min-w-0 flex-1">
 											<div className="flex items-center gap-1.5">
 												<span className="truncate text-sm font-medium">

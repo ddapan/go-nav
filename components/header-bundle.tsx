@@ -1,25 +1,20 @@
 "use client";
 
-import type { Key } from "@heroui/react";
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useOverlayState, type Key } from "@heroui/react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAtomValue } from "jotai";
 import { AppHeader } from "./app-header";
+import { EngineDrawer } from "./engine-drawer";
+import { MobileNavDrawer } from "./mobile-nav-drawer";
 import {
 	categoriesAtom,
 	flatSitesAtom,
+	layoutAtom,
 	navLogoAtom,
 	navNameAtom,
 	searchConfigAtom,
 } from "@/lib/store/site";
 import { useJumpToSection } from "@/hooks/use-active-section";
-
-// 延迟加载 Drawer 组件 - 仅在用户交互时才加载
-const MobileNavDrawer = lazy(() =>
-	import("./mobile-nav-drawer").then((m) => ({ default: m.MobileNavDrawer })),
-);
-const EngineDrawer = lazy(() =>
-	import("./engine-drawer").then((m) => ({ default: m.EngineDrawer })),
-);
 
 /**
  * 头部聚合组件：AppHeader + 移动端导航抽屉 + 搜索引擎抽屉。
@@ -34,28 +29,27 @@ export function HeaderBundle({ showSearch }: { showSearch: boolean }) {
 	const name = useAtomValue(navNameAtom);
 	const logo = useAtomValue(navLogoAtom);
 	const onNavigate = useJumpToSection();
-
-	const [drawerOpen, setDrawerOpen] = useState(false);
+	const drawerState = useOverlayState();
 
 	// 断点切换时自动关闭抽屉
 	useEffect(() => {
-		if (!drawerOpen) return;
+		if (!drawerState.isOpen) return;
 		const onResize = () => {
-			if (window.innerWidth >= 768) setDrawerOpen(false);
+			if (window.innerWidth >= 768) drawerState.close();
 		};
 		window.addEventListener("resize", onResize);
 		return () => window.removeEventListener("resize", onResize);
-	}, [drawerOpen]);
+	}, [drawerState]);
 
-	const openMenu = useCallback(() => setDrawerOpen(true), []);
+	const openMenu = useCallback(() => drawerState.open(), [drawerState]);
 
 	// 移动端导航点击后除了跳转还要关掉抽屉
 	const handleDrawerNavigate = useCallback(
 		(id: string) => {
 			onNavigate(id);
-			setDrawerOpen(false);
+			drawerState.close();
 		},
-		[onNavigate],
+		[drawerState, onNavigate],
 	);
 
 	const header = showSearch ? (
@@ -78,17 +72,13 @@ export function HeaderBundle({ showSearch }: { showSearch: boolean }) {
 		<>
 			{header}
 
-			<Suspense>
-				{drawerOpen && (
-					<MobileNavDrawerHost
-						open={drawerOpen}
-						onOpenChange={setDrawerOpen}
-						onItemClick={handleDrawerNavigate}
-						title={name}
-						logo={logo}
-					/>
-				)}
-			</Suspense>
+			<MobileNavDrawerHost
+				open={drawerState.isOpen}
+				onOpenChange={drawerState.setOpen}
+				onItemClick={handleDrawerNavigate}
+				title={name}
+				logo={logo}
+			/>
 		</>
 	);
 }
@@ -133,7 +123,8 @@ function SearchHeader({
 }) {
 	const search = useAtomValue(searchConfigAtom);
 	const flatSites = useAtomValue(flatSitesAtom);
-	const [engineDrawerOpen, setEngineDrawerOpen] = useState(false);
+	const layout = useAtomValue(layoutAtom);
+	const engineDrawerState = useOverlayState();
 
 	const engineOptions = useMemo(() => {
 		const base = search.enableLocalSearch
@@ -151,20 +142,23 @@ function SearchHeader({
 	const [engineId, setEngineId] = useState<Key | null>(resolvedDefaultEngine);
 
 	useEffect(() => {
-		if (!engineDrawerOpen) return;
+		if (!engineDrawerState.isOpen) return;
 		const onResize = () => {
-			if (window.innerWidth >= 480) setEngineDrawerOpen(false);
+			if (window.innerWidth >= 480) engineDrawerState.close();
 		};
 		window.addEventListener("resize", onResize);
 		return () => window.removeEventListener("resize", onResize);
-	}, [engineDrawerOpen]);
+	}, [engineDrawerState]);
 
 	useEffect(() => {
 		if (engineId !== null && engineOptions.includes(String(engineId))) return;
 		setEngineId(resolvedDefaultEngine);
 	}, [engineId, engineOptions, resolvedDefaultEngine]);
 
-	const openEngineDrawer = useCallback(() => setEngineDrawerOpen(true), []);
+	const openEngineDrawer = useCallback(
+		() => engineDrawerState.open(),
+		[engineDrawerState],
+	);
 	const showEngineSelector = search.showEngineSelector !== false;
 
 	return (
@@ -186,20 +180,17 @@ function SearchHeader({
 				onEngineDrawerOpen={openEngineDrawer}
 				showSearch
 				showEngineSelector={showEngineSelector}
+				layout={layout}
 			/>
 
-			<Suspense>
-				{engineDrawerOpen && (
-					<EngineDrawer
-						open={engineDrawerOpen}
-						onOpenChange={setEngineDrawerOpen}
-						engines={search.engines}
-						enableLocal={search.enableLocalSearch}
-						currentEngine={engineId}
-						onEngineChange={setEngineId}
-					/>
-				)}
-			</Suspense>
+			<EngineDrawer
+				open={engineDrawerState.isOpen}
+				onOpenChange={engineDrawerState.setOpen}
+				engines={search.engines}
+				enableLocal={search.enableLocalSearch}
+				currentEngine={engineId}
+				onEngineChange={setEngineId}
+			/>
 		</>
 	);
 }

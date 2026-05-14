@@ -75,7 +75,7 @@ cp .env.example .env.local
 | `pnpm lint`         | 运行 ESLint                                         |
 | `pnpm docker:build` | 构建本地 Docker 镜像                                |
 | `pnpm docker:up`    | 构建并启动本地 Docker Compose 测试环境              |
-| `pnpm docker:push`  | 构建多架构镜像并推送到 Docker Hub                  |
+| `pnpm docker:push`  | 构建多架构镜像并推送到 Docker Hub                   |
 
 ## 运行模式
 
@@ -171,7 +171,7 @@ pnpm docker:build
 默认构建 `go-nav:latest`。也可以指定镜像名和标签：
 
 ```bash
-IMAGE_NAME=doxwant/go-nav IMAGE_TAG=0.1.0 pnpm docker:build
+IMAGE_NAME=doxwant/go-nav IMAGE_TAG=1.0.0 pnpm docker:build
 ```
 
 #### 推送 Docker Hub
@@ -182,18 +182,24 @@ IMAGE_NAME=doxwant/go-nav IMAGE_TAG=0.1.0 pnpm docker:build
 docker login
 ```
 
-构建并推送多架构镜像：
+默认会推送到 `doxwant/go-nav`。如果要推送到自己的镜像仓库，可以在 `.env` 里覆盖：
+
+```dotenv
+IMAGE_NAME=doxwant/go-nav
+```
+
+推送只需要一个命令：
 
 ```bash
-IMAGE_NAME=doxwant/go-nav IMAGE_TAG=0.1.0 pnpm docker:push
+pnpm docker:push
 ```
 
 默认会推送：
 
-- `doxwant/go-nav:0.1.0`
+- `doxwant/go-nav:<package.json version>`
 - `doxwant/go-nav:latest`
 
-默认平台是 `linux/amd64,linux/arm64`。如只推当前机器架构，可以改用 `pnpm docker:build` 后手动 `docker push`。
+`IMAGE_TAG` 默认读取 `package.json` 的 `version`，也可以在环境变量里临时覆盖。默认平台是 `linux/amd64,linux/arm64`；如需调整可以设置 `PLATFORMS`，或用 `PUSH_LATEST=false` 跳过 `latest` 标签。
 
 #### 用户拉取运行
 

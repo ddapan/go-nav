@@ -36,8 +36,8 @@ export function EngineDrawer({
 	const current = engineOptions.find((e) => e.id === currentEngine);
 
 	return (
-		<Drawer isOpen={open} onOpenChange={onOpenChange}>
-			<Drawer.Backdrop>
+		<Drawer>
+			<Drawer.Backdrop isOpen={open} onOpenChange={onOpenChange}>
 				<Drawer.Content placement="right">
 					<Drawer.Dialog className="ml-auto w-dvw max-w-72 p-3 bg-background">
 						<Drawer.CloseTrigger />

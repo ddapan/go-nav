@@ -14,6 +14,7 @@ import {
 	toast,
 	Drawer,
 	cn,
+	useOverlayState,
 } from "@heroui/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -36,7 +37,7 @@ import {
 	resolveConfiguredValue,
 	resolveSiteBackgroundColor,
 	toPx,
-} from "../site-card";
+} from "../site-icon";
 
 interface FlatCategory {
 	category: NavCategory;
@@ -102,7 +103,7 @@ export function SitesEditor() {
 		collectExpandableIds(categories),
 	);
 	const knownExpandableIdsRef = useRef(collectExpandableIds(categories));
-	const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+	const mobileDrawerState = useOverlayState();
 	const defaultIconPadding = nav.layout?.defaultIconPadding;
 
 	const flatCategories = useMemo(() => {
@@ -280,7 +281,7 @@ export function SitesEditor() {
 		setSelectedCategory(catId);
 		setSearch("");
 		setDeleteTarget(null);
-		setMobileDrawerOpen(false);
+		mobileDrawerState.close();
 	};
 
 	const toggleExpand = (catId: string) => {
@@ -393,7 +394,7 @@ export function SitesEditor() {
 					<div className="border-b border-gray-100 px-4 py-3 dark:border-neutral-800">
 						<h3 className="text-sm font-semibold">选择分类</h3>
 					</div>
-					<div className="flex-1 overflow-y-auto p-2">
+					<div className="flex-1 overflow-y-auto p-2 overscroll-none">
 						{renderCategoryList()}
 					</div>
 				</div>
@@ -406,14 +407,14 @@ export function SitesEditor() {
 								variant="primary"
 								size="sm"
 								className="lg:hidden"
-								onPress={() => setMobileDrawerOpen(true)}
+								onPress={mobileDrawerState.open}
 							>
 								选择分类
 							</Button>
 						</div>
 					) : (
-						<div className="flex h-full flex-col gap-4">
-							<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+						<div className="flex h-full flex-col gap-4 overflow-y-scroll overscroll-none">
+							<div className="flex flex-col gap-4 flex-wrap sm:flex-row sm:items-center sm:justify-between">
 								<div className="flex items-center gap-2 pt-1">
 									<span className="truncate font-medium text-lg!">
 										{getCategoryPath(selectedCategory)}
@@ -432,7 +433,7 @@ export function SitesEditor() {
 										size="sm"
 										className="shrink-0 lg:hidden"
 										isIconOnly
-										onPress={() => setMobileDrawerOpen(true)}
+										onPress={mobileDrawerState.open}
 									>
 										<BiMenu className="size-4" />
 									</Button>
@@ -462,7 +463,7 @@ export function SitesEditor() {
 								</div>
 							</div>
 
-							<div className="min-h-0 flex-1 overflow-hidden">
+							<div>
 								{filteredSites.length === 0 ? (
 									<div className="flex h-64 items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
 										<p className="text-sm text-default-500">
@@ -642,8 +643,11 @@ export function SitesEditor() {
 				</div>
 			</div>
 
-			<Drawer isOpen={mobileDrawerOpen} onOpenChange={setMobileDrawerOpen}>
-				<Drawer.Backdrop>
+			<Drawer>
+				<Drawer.Backdrop
+					isOpen={mobileDrawerState.isOpen}
+					onOpenChange={mobileDrawerState.setOpen}
+				>
 					<Drawer.Content placement="left">
 						<Drawer.Dialog className="w-dvw max-w-72 p-3 bg-white dark:bg-neutral-900">
 							<Drawer.Header>
@@ -653,7 +657,7 @@ export function SitesEditor() {
 										isIconOnly
 										size="sm"
 										variant="tertiary"
-										onPress={() => setMobileDrawerOpen(false)}
+										onPress={mobileDrawerState.close}
 									>
 										<BiX className="size-4" />
 									</Button>
@@ -667,11 +671,11 @@ export function SitesEditor() {
 				</Drawer.Backdrop>
 			</Drawer>
 
-			<Modal
-				isOpen={isModalOpen}
-				onOpenChange={(open) => !open && setIsModalOpen(false)}
-			>
-				<Modal.Backdrop>
+			<Modal>
+				<Modal.Backdrop
+					isOpen={isModalOpen}
+					onOpenChange={(open) => !open && setIsModalOpen(false)}
+				>
 					<Modal.Container>
 						<Modal.Dialog className="sm:max-w-125">
 							<Modal.CloseTrigger />
@@ -768,11 +772,11 @@ export function SitesEditor() {
 				</Modal.Backdrop>
 			</Modal>
 
-			<AlertDialog
-				isOpen={deleteTarget !== null}
-				onOpenChange={(open) => !open && setDeleteTarget(null)}
-			>
-				<AlertDialog.Backdrop>
+			<AlertDialog>
+				<AlertDialog.Backdrop
+					isOpen={deleteTarget !== null}
+					onOpenChange={(open) => !open && setDeleteTarget(null)}
+				>
 					<AlertDialog.Container>
 						<AlertDialog.Dialog className="sm:max-w-100">
 							<AlertDialog.CloseTrigger />

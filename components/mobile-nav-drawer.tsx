@@ -21,8 +21,8 @@ export function MobileNavDrawer({
 	logo?: string;
 }) {
 	return (
-		<Drawer isOpen={open} onOpenChange={onOpenChange}>
-			<Drawer.Backdrop>
+		<Drawer>
+			<Drawer.Backdrop isOpen={open} onOpenChange={onOpenChange}>
 				<Drawer.Content placement="left">
 					<Drawer.Dialog className="w-dvw max-w-72 p-3 bg-background">
 						<Drawer.CloseTrigger />

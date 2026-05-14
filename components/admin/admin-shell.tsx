@@ -10,13 +10,13 @@ import {
 	Breadcrumbs,
 	type Selection,
 	Card,
-	Toast,
 	toast,
 	Link,
+	useOverlayState,
 } from "@heroui/react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAtomValue, useSetAtom } from "jotai";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import {
 	BiCog,
 	BiGlobe,
@@ -317,19 +317,19 @@ export function AdminShell({ children }: { children?: React.ReactNode }) {
 		() => new Set([currentKey]),
 		[currentKey],
 	);
-	const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+	const mobileDrawerState = useOverlayState();
 
 	// 窗口变大时自动关闭抽屉
 	useEffect(() => {
-		if (!mobileDrawerOpen) return;
+		if (!mobileDrawerState.isOpen) return;
 		const onResize = () => {
 			if (window.innerWidth >= 1024) {
-				setMobileDrawerOpen(false);
+				mobileDrawerState.close();
 			}
 		};
 		window.addEventListener("resize", onResize);
 		return () => window.removeEventListener("resize", onResize);
-	}, [mobileDrawerOpen]);
+	}, [mobileDrawerState]);
 
 	const onLogout = useCallback(async () => {
 		await fetch("/api/auth/logout", { method: "POST" });
@@ -354,7 +354,7 @@ export function AdminShell({ children }: { children?: React.ReactNode }) {
 				<BrandBlock variant="desktop" />
 
 				{/* 菜单区域 */}
-				<div className="flex-1 overflow-y-auto p-2">
+				<div className="flex-1 overflow-y-auto p-2 overscroll-none">
 					<ListBox
 						aria-label="管理菜单"
 						selectionMode="single"
@@ -402,55 +402,56 @@ export function AdminShell({ children }: { children?: React.ReactNode }) {
 			</aside>
 
 			{/* 移动端抽屉菜单 */}
-			{mobileDrawerOpen && (
-				<Drawer isOpen={mobileDrawerOpen} onOpenChange={setMobileDrawerOpen}>
-					<Drawer.Backdrop>
-						<Drawer.Content placement="left">
-							<Drawer.Dialog className="w-dvw max-w-64 p-3 bg-white dark:bg-neutral-900">
-								<Drawer.Header>
-									<Drawer.Heading className="flex items-center gap-2 p-3">
-										<BrandBlock variant="drawer" />
-									</Drawer.Heading>
-								</Drawer.Header>
-								<Drawer.Body className="p-0">
-									<ListBox
-										aria-label="管理菜单"
-										selectionMode="single"
-										selectedKeys={selectedKeys}
-										onSelectionChange={(keys) => {
-											handleSelection(keys);
-											setMobileDrawerOpen(false);
-										}}
-										disallowEmptySelection
-										className="w-full px-2"
-									>
-										{NAV_SECTIONS.map((section) => (
-											<ListBox.Section key={section.title}>
-												<Header className="px-3">{section.title}</Header>
-												{section.items.map((it) => (
-													<ListBox.Item
-														key={it.key}
-														id={it.key}
-														textValue={it.label}
-														className="mb-0.5 rounded-lg py-2.5 data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-600 dark:data-[selected=true]:bg-blue-950/40 dark:data-[selected=true]:text-blue-300"
-													>
-														<div className="flex items-center gap-2">
-															{it.icon}
-															<Label className="text-sm font-medium">
-																{it.label}
-															</Label>
-														</div>
-													</ListBox.Item>
-												))}
-											</ListBox.Section>
-										))}
-									</ListBox>
-								</Drawer.Body>
-							</Drawer.Dialog>
-						</Drawer.Content>
-					</Drawer.Backdrop>
-				</Drawer>
-			)}
+			<Drawer>
+				<Drawer.Backdrop
+					isOpen={mobileDrawerState.isOpen}
+					onOpenChange={mobileDrawerState.setOpen}
+				>
+					<Drawer.Content placement="left">
+						<Drawer.Dialog className="w-dvw max-w-64 p-3 bg-white dark:bg-neutral-900">
+							<Drawer.Header>
+								<Drawer.Heading className="flex items-center gap-2 p-3">
+									<BrandBlock variant="drawer" />
+								</Drawer.Heading>
+							</Drawer.Header>
+							<Drawer.Body className="p-0">
+								<ListBox
+									aria-label="管理菜单"
+									selectionMode="single"
+									selectedKeys={selectedKeys}
+									onSelectionChange={(keys) => {
+										handleSelection(keys);
+										mobileDrawerState.close();
+									}}
+									disallowEmptySelection
+									className="w-full px-2"
+								>
+									{NAV_SECTIONS.map((section) => (
+										<ListBox.Section key={section.title}>
+											<Header className="px-3">{section.title}</Header>
+											{section.items.map((it) => (
+												<ListBox.Item
+													key={it.key}
+													id={it.key}
+													textValue={it.label}
+													className="mb-0.5 rounded-lg py-2.5 data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-600 dark:data-[selected=true]:bg-blue-950/40 dark:data-[selected=true]:text-blue-300"
+												>
+													<div className="flex items-center gap-2">
+														{it.icon}
+														<Label className="text-sm font-medium">
+															{it.label}
+														</Label>
+													</div>
+												</ListBox.Item>
+											))}
+										</ListBox.Section>
+									))}
+								</ListBox>
+							</Drawer.Body>
+						</Drawer.Dialog>
+					</Drawer.Content>
+				</Drawer.Backdrop>
+			</Drawer>
 
 			{/* 右侧主区 */}
 			<div className="flex min-w-0 flex-1 flex-col">
@@ -461,7 +462,7 @@ export function AdminShell({ children }: { children?: React.ReactNode }) {
 						variant="tertiary"
 						isIconOnly
 						className="h-8 w-8 shrink-0 lg:hidden"
-						onPress={() => setMobileDrawerOpen(true)}
+						onPress={mobileDrawerState.open}
 					>
 						<BiMenu className="size-4" />
 					</Button>
@@ -539,7 +540,6 @@ export function AdminShell({ children }: { children?: React.ReactNode }) {
 					</Card>
 				</main>
 			</div>
-			<Toast.Provider placement="top" />
 		</div>
 	);
 }

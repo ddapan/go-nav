@@ -2,7 +2,7 @@
 import type { Key } from "@heroui/react";
 import { Button } from "@heroui/react";
 import { memo } from "react";
-import type { NavSite, SearchEngine } from "@/types";
+import type { LayoutConfig, NavSite, SearchEngine } from "@/types";
 import { getIconImageSrc } from "@/lib/icon";
 import { SearchBar } from "./search-bar";
 import { BiMenuAltLeft, BiGlobe } from "react-icons/bi";
@@ -29,6 +29,7 @@ export const AppHeader = memo(function AppHeader({
 	onEngineDrawerOpen,
 	showSearch = true,
 	showEngineSelector = true,
+	layout,
 }: {
 	websiteName: string;
 	websiteLogo: string;
@@ -46,6 +47,7 @@ export const AppHeader = memo(function AppHeader({
 	onEngineDrawerOpen?: () => void;
 	showSearch?: boolean;
 	showEngineSelector?: boolean;
+	layout?: Pick<LayoutConfig, "defaultIconPadding" | "iconBorderRadius">;
 }) {
 	const logoSrc = getIconImageSrc(websiteLogo);
 	return (
@@ -88,6 +90,7 @@ export const AppHeader = memo(function AppHeader({
 						engineId={engineId}
 						onEngineChange={onEngineChange}
 						showEngineSelector={showEngineSelector}
+						layout={layout}
 					/>
 				</div>
 			)}

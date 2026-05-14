@@ -15,7 +15,7 @@ import {
 } from "@heroui/react";
 import { useRef, useState } from "react";
 import { getIconImageSrc } from "@/lib/icon";
-import { resolveConfiguredValue, toPx } from "../site-card";
+import { resolveConfiguredValue, toPx } from "../site-icon";
 
 const TRANSPARENT_BG_COLOR = "rgba(255, 255, 255, 0)";
 const WHITE_BG_COLOR = "#ffffff";

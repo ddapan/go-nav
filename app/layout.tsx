@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { getNav } from "@/lib/config";
 import { ThemeProvider } from "@/components/theme-provider";
+import { AppToastProvider } from "@/components/app-toast-provider";
 
 export const viewport: Viewport = {
 	width: "device-width",
@@ -63,6 +64,7 @@ export default function RootLayout({
 			<body className="min-h-full flex flex-col">
 				<ThemeProvider mode={themeMode}>
 					{children}
+					<AppToastProvider />
 				</ThemeProvider>
 			</body>
 		</html>

@@ -15,8 +15,9 @@
 	--primary-foreground: #1e1e1e;
 }
 
-html {
-	scrollbar-width: none;
+* {
+	scrollbar-width: none !important;
+	-ms-overflow-style: none !important;
 }
 
 body {
@@ -29,7 +30,9 @@ body:where(.dark *) {
 	color: #e5e5e5;
 }
 
-::-webkit-scrollbar {
+*::-webkit-scrollbar {
+	width: 0 !important;
+	height: 0 !important;
 	display: none !important;
 }
 

@@ -243,11 +243,11 @@ export function AdsEditor() {
 			)}
 
 			{/* 删除确认对话框 */}
-			<Modal
-				isOpen={deleteConfirm !== null}
-				onOpenChange={(open) => !open && setDeleteConfirm(null)}
-			>
-				<Modal.Backdrop>
+			<Modal>
+				<Modal.Backdrop
+					isOpen={deleteConfirm !== null}
+					onOpenChange={(open) => !open && setDeleteConfirm(null)}
+				>
 					<Modal.Container>
 						<Modal.Dialog>
 							<Modal.Header>

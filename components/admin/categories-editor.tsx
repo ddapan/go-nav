@@ -537,11 +537,11 @@ export function CategoriesEditor() {
 				</Table.ScrollContainer>
 			</Table>
 
-			<Modal
-				isOpen={isModalOpen}
-				onOpenChange={(open) => !open && setIsModalOpen(false)}
-			>
-				<Modal.Backdrop>
+			<Modal>
+				<Modal.Backdrop
+					isOpen={isModalOpen}
+					onOpenChange={(open) => !open && setIsModalOpen(false)}
+				>
 					<Modal.Container>
 						<Modal.Dialog className="sm:max-w-125">
 							<Modal.CloseTrigger />
@@ -655,11 +655,11 @@ export function CategoriesEditor() {
 				</Modal.Backdrop>
 			</Modal>
 
-			<AlertDialog
-				isOpen={deleteTarget !== null}
-				onOpenChange={(open) => !open && setDeleteTarget(null)}
-			>
-				<AlertDialog.Backdrop>
+			<AlertDialog>
+				<AlertDialog.Backdrop
+					isOpen={deleteTarget !== null}
+					onOpenChange={(open) => !open && setDeleteTarget(null)}
+				>
 					<AlertDialog.Container>
 						<AlertDialog.Dialog className="sm:max-w-100">
 							<AlertDialog.CloseTrigger />

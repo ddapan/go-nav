@@ -189,11 +189,11 @@ export function PluginsEditor() {
 			)}
 
 			{/* 编辑 / 新增 Drawer */}
-			<Drawer
-				isOpen={editing !== null}
-				onOpenChange={(open) => !open && setEditing(null)}
-			>
-				<Drawer.Backdrop>
+			<Drawer>
+				<Drawer.Backdrop
+					isOpen={editing !== null}
+					onOpenChange={(open) => !open && setEditing(null)}
+				>
 					<Drawer.Content placement="right">
 						<Drawer.Dialog className="w-dvw max-w-xl bg-white dark:bg-neutral-900">
 							<Drawer.CloseTrigger />
@@ -230,11 +230,11 @@ export function PluginsEditor() {
 			</Drawer>
 
 			{/* 删除确认 */}
-			<Modal
-				isOpen={deleteConfirm !== null}
-				onOpenChange={(open) => !open && setDeleteConfirm(null)}
-			>
-				<Modal.Backdrop>
+			<Modal>
+				<Modal.Backdrop
+					isOpen={deleteConfirm !== null}
+					onOpenChange={(open) => !open && setDeleteConfirm(null)}
+				>
 					<Modal.Container>
 						<Modal.Dialog>
 							<Modal.Header>

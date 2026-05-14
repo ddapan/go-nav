@@ -7,6 +7,7 @@ import {
 	Label,
 	Link,
 	TextField,
+	toast,
 } from "@heroui/react";
 import { useState } from "react";
 import { BiShow, BiHide } from "react-icons/bi";
@@ -26,14 +27,12 @@ export function LoginForm({
 	const [username, setUsername] = useState("");
 	const [password, setPassword] = useState("");
 	const [loading, setLoading] = useState(false);
-	const [error, setError] = useState<string | null>(null);
 	const [showPwd, setShowPwd] = useState(false);
 	const logoSrc = getIconImageSrc(websiteLogo);
 
 	const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 		setLoading(true);
-		setError(null);
 		try {
 			const res = await fetch("/api/auth/login", {
 				method: "POST",
@@ -46,7 +45,9 @@ export function LoginForm({
 			}
 			window.location.href = "/admin";
 		} catch (err) {
-			setError((err as Error).message);
+			toast.danger("登录失败", {
+				description: (err as Error).message,
+			});
 		} finally {
 			setLoading(false);
 		}
@@ -80,12 +81,6 @@ export function LoginForm({
 			</div>
 
 			<form onSubmit={onSubmit} className="flex flex-col gap-5">
-				{error ? (
-					<div className="rounded-lg border border-danger/40 bg-danger/10 px-3 py-2.5 text-sm text-danger">
-						{error}
-					</div>
-				) : null}
-
 				<TextField
 					value={username}
 					onChange={setUsername}

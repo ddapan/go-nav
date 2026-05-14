@@ -18,7 +18,7 @@ import {
 	showAdsAtom,
 	showRecentVisitsAtom,
 } from "@/lib/store/site";
-import { toPx } from "./site-card";
+import { toPx } from "./site-icon";
 
 /**
  * 顶层布局组件（Jotai 订阅版）。
