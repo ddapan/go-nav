@@ -53,7 +53,7 @@ export const AppFooter = memo(function AppFooter({
 												href={item.href}
 												target={isExternal ? "_blank" : undefined}
 												rel={isExternal ? "noopener noreferrer" : undefined}
-												className="inline-flex items-center gap-1 text-xs transition no-underline hover:underline"
+												className="inline-flex items-center gap-1 text-xs transition no-underline [@media(hover:hover)]:hover:underline"
 												aria-label={item.label}
 											>
 												<span>{item.label}</span>
@@ -86,7 +86,7 @@ export const AppFooter = memo(function AppFooter({
 					) : null}
 				</div>
 
-				<div className="mt-8 flex flex-col gap-2 border-t border-black/6 dark:border-white/8 pt-5 text-xs lg:flex-row lg:items-center lg:justify-between">
+				<div className="mt-8 flex flex-col gap-2 border-t border-black/6 pt-5 text-xs dark:border-white/8 lg:flex-row lg:items-center lg:justify-between">
 					<div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5">
 						<span>
 							{copyright || `© ${CURRENT_YEAR} ${name}. All rights reserved.`}
@@ -97,7 +97,7 @@ export const AppFooter = memo(function AppFooter({
 								href="https://github.com/dengxiwang/go-nav"
 								target="_blank"
 								rel="noopener noreferrer"
-								className="text-xs font-semibold no-underline hover:underline hover:text-primary"
+								className="text-xs font-semibold no-underline [@media(hover:hover)]:hover:underline [@media(hover:hover)]:hover:text-primary"
 							>
 								Go Nav
 							</Link>
@@ -109,7 +109,7 @@ export const AppFooter = memo(function AppFooter({
 								href="https://beian.miit.gov.cn/"
 								target="_blank"
 								rel="noopener noreferrer"
-								className="text-xs no-underline hover:underline"
+								className="text-xs no-underline [@media(hover:hover)]:hover:underline"
 							>
 								{icp}
 							</Link>
@@ -119,7 +119,7 @@ export const AppFooter = memo(function AppFooter({
 								href="https://www.beian.gov.cn/portal/registerSystemInfo"
 								target="_blank"
 								rel="noopener noreferrer"
-								className="inline-flex items-center gap-1 text-xs no-underline hover:underline"
+								className="inline-flex items-center gap-1 text-xs no-underline [@media(hover:hover)]:hover:underline"
 							>
 								<Image
 									src="/images/beian.png"

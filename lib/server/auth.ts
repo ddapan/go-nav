@@ -1,4 +1,7 @@
 import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
+import { DATA_DIR } from "./paths";
 
 /** 登录 cookie 名称 */
 export const SESSION_COOKIE = "nav_session";
@@ -6,8 +9,19 @@ export const SESSION_COOKIE = "nav_session";
 /** 会话有效期（毫秒）：7 天 */
 export const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
+let fileSecret: string | null | undefined;
+
 function getSecret(): string {
-	return process.env.SESSION_SECRET || "dev-secret-change-me";
+	if (process.env.SESSION_SECRET) return process.env.SESSION_SECRET;
+	if (fileSecret !== undefined) return fileSecret || "dev-secret-change-me";
+	try {
+		fileSecret = fs
+			.readFileSync(path.join(DATA_DIR, ".session-secret"), "utf-8")
+			.trim();
+	} catch {
+		fileSecret = null;
+	}
+	return fileSecret || "dev-secret-change-me";
 }
 
 function toBase64Url(buf: Buffer): string {

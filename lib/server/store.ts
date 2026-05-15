@@ -72,8 +72,26 @@ export const DEFAULT_NAV: NavConfig = {
 			},
 		],
 	},
-	ads: [],
+	ads: [
+		{
+			id: "ad-1778577116508",
+			title: "雨云服务器",
+			description: "",
+			image: "https://blog.gotab.cn/upload/rainyun_ad.webp",
+			url: "https://www.rainyun.com/gotab_",
+			enabled: true,
+		},
+	],
 	plugins: [],
+	layout: {
+		maxWidth: "1400",
+		showFooter: true,
+		showFooterQrCode: true,
+		showFloatingQrCode: true,
+		showFloatingActions: true,
+		defaultIconPadding: "8",
+	},
+	adsAspectRatio: "4/3",
 };
 
 function isMissingFileError(e: unknown): boolean {

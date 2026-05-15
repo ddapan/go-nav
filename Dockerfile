@@ -33,15 +33,9 @@ FROM node:22-alpine AS runner
 
 WORKDIR /app
 
-ENV NODE_ENV=production
-ENV BUILD_MODE=server
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV HOSTNAME=0.0.0.0
-ENV PORT=3000
-ENV DATA_DIR=/app/data
-
 RUN addgroup --system --gid 1001 nodejs \
-	&& adduser --system --uid 1001 nextjs
+	&& adduser --system --uid 1001 nextjs \
+	&& apk add --no-cache su-exec
 
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
@@ -52,8 +46,6 @@ COPY scripts/docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh \
 	&& mkdir -p /app/data/uploads \
 	&& chown -R nextjs:nodejs /app/data /app/default-data /app/.next
-
-USER nextjs
 
 EXPOSE 3000
 VOLUME ["/app/data"]

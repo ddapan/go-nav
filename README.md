@@ -60,7 +60,7 @@ pnpm dev
 cp .env.example .env.local
 ```
 
-生产环境务必修改 `ADMIN_PASS` 和 `SESSION_SECRET`。
+生产环境务必修改 `ADMIN_PASS`。登录密钥 `SESSION_SECRET` 可以自己配置；Docker 不配置时会自动生成并持久化。
 
 ## 常用命令
 
@@ -93,10 +93,9 @@ pnpm start
 ```bash
 ADMIN_USER=admin
 ADMIN_PASS=admin123
-SESSION_SECRET=please-change-me-to-a-long-random-string
 ```
 
-生产环境务必修改 `ADMIN_PASS` 和 `SESSION_SECRET`。可以复制 `.env.example` 为 `.env.local` 后调整。
+生产环境务必修改 `ADMIN_PASS`。`SESSION_SECRET` 可选配置；Docker 不配置时会自动生成并保存在数据目录里。
 
 ### Docker 部署
 
@@ -105,7 +104,9 @@ Docker 部署使用 server 模式，镜像基于 Next.js standalone 输出，只
 - 容器首次启动时，如果 `/app/data/nav.json` 或 `/app/data/website.json` 不存在，会从镜像内的默认数据初始化。
 - 容器首次启动时，如果 `/app/data/uploads/` 不存在或为空，会从镜像内的默认 `uploads/` 初始化。
 - 如果用户挂载了自己的目录，并且里面已有 `nav.json` / `website.json` / 上传文件，启动脚本不会覆盖用户数据。
-- 默认使用 Docker 命名卷 `go-nav-data` 持久化 `/app/data`，也可以通过 `DATA_MOUNT` 改成本地目录挂载。
+- 登录密钥 `SESSION_SECRET` 可以手动配置；不配置时 Docker 镜像会自动生成并保存到 `/app/data/.session-secret`。
+- 常用部署只需要关心本地目录挂载、端口、用户名和密码；需要固定登录密钥时再加 `SESSION_SECRET`。
+- 推荐把宿主机本地目录挂载到 `/app/data`，目录需要可读写；镜像启动时会自动修正常见的目录所有权问题。
 
 #### 本地构建测试
 
@@ -120,8 +121,8 @@ cp .env.example .env
 ```bash
 ADMIN_USER=admin
 ADMIN_PASS=change-this-password
-SESSION_SECRET=change-this-to-a-long-random-string
 PORT=3000
+# 可选：SESSION_SECRET=change-this-to-a-long-random-string
 ```
 
 2. 构建并启动：
@@ -145,21 +146,22 @@ pnpm docker:logs
 pnpm docker:down
 ```
 
-默认使用命名卷 `go-nav-data` 持久化 `/app/data`，其中包含 JSON 配置和 `uploads/` 上传素材。需要迁移或备份时，可以通过后台备份功能导出，或直接备份该 Docker volume。
+默认使用项目目录下的 `go-nav-data/` 持久化 `/app/data`，其中包含 JSON 配置、`uploads/` 上传素材和自动生成的 `.session-secret`。需要迁移或备份时，可以通过后台备份功能导出，或直接备份该目录。
 
 如果要用本地目录测试用户自定义数据：
 
 ```bash
-mkdir -p docker-data
-cp data/nav.json docker-data/nav.json
-cp data/website.json docker-data/website.json
-DATA_MOUNT=./docker-data:/app/data pnpm docker:up
+mkdir -p go-nav-data
+cp data/nav.json go-nav-data/nav.json
+cp data/website.json go-nav-data/website.json
+pnpm docker:up
 ```
 
-如果需要重置默认命名卷中的数据：
+如果需要重置本地测试数据：
 
 ```bash
-docker compose down -v
+pnpm docker:down
+rm -rf go-nav-data
 ```
 
 #### 构建本地镜像
@@ -182,10 +184,10 @@ IMAGE_NAME=doxwant/go-nav IMAGE_TAG=1.0.0 pnpm docker:build
 docker login
 ```
 
-默认会推送到 `doxwant/go-nav`。如果要推送到自己的镜像仓库，可以在 `.env` 里覆盖：
+默认会推送到 `doxwant/go-nav`。如果要推送到自己的镜像仓库，可以临时覆盖：
 
-```dotenv
-IMAGE_NAME=doxwant/go-nav
+```bash
+IMAGE_NAME=your-name/go-nav pnpm docker:push
 ```
 
 推送只需要一个命令：
@@ -206,21 +208,6 @@ pnpm docker:push
 使用镜像内置默认数据：
 
 ```bash
-docker run -d \
-  --name go-nav \
-  --restart unless-stopped \
-  -p 3000:3000 \
-  -e ADMIN_USER=admin \
-  -e ADMIN_PASS=change-this-password \
-  -e SESSION_SECRET=change-this-to-a-long-random-string \
-  -e DATA_DIR=/app/data \
-  -v go-nav-data:/app/data \
-  doxwant/go-nav:latest
-```
-
-使用本地数据目录。目录为空时会初始化默认 JSON 和 `uploads/`；目录内已有 `nav.json` / `website.json` / 上传文件时会直接使用用户数据：
-
-```bash
 mkdir -p ./go-nav-data
 docker run -d \
   --name go-nav \
@@ -228,11 +215,13 @@ docker run -d \
   -p 3000:3000 \
   -e ADMIN_USER=admin \
   -e ADMIN_PASS=change-this-password \
-  -e SESSION_SECRET=change-this-to-a-long-random-string \
-  -e DATA_DIR=/app/data \
   -v "$(pwd)/go-nav-data:/app/data" \
   doxwant/go-nav:latest
 ```
+
+把左侧端口改掉即可换访问端口，例如 `-p 8080:3000`。如果需要固定登录密钥，在命令里额外加 `-e SESSION_SECRET=change-this-to-a-long-random-string`。数据目录为空时会初始化默认 JSON 和 `uploads/`；目录内已有 `nav.json` / `website.json` / 上传文件时会直接使用用户数据。
+
+NAS / 面板部署时常用配置只有这几项：容器端口 `3000` 映射到宿主机端口、本地目录挂载到 `/app/data`、环境变量 `ADMIN_USER` 和 `ADMIN_PASS`。如果希望多容器迁移后登录态不失效，可以额外配置 `SESSION_SECRET`。不要把挂载目录设为只读。
 
 如果用户想用 Docker Compose 部署远端镜像，可以创建自己的 `docker-compose.yml`：
 
@@ -246,13 +235,10 @@ services:
     environment:
       ADMIN_USER: admin
       ADMIN_PASS: change-this-password
-      SESSION_SECRET: change-this-to-a-long-random-string
-      DATA_DIR: /app/data
+      # 可选，不填则自动生成并保存到 ./go-nav-data/.session-secret
+      # SESSION_SECRET: change-this-to-a-long-random-string
     volumes:
-      - go-nav-data:/app/data
-
-volumes:
-  go-nav-data:
+      - ./go-nav-data:/app/data
 ```
 
 然后启动：
@@ -282,13 +268,13 @@ data/
 └── uploads/       # 后台上传的图片素材，默认不提交到 Git
 ```
 
-server 模式可以通过 `DATA_DIR` 指定外部数据目录，便于持久化：
+非 Docker server 模式可以通过 `DATA_DIR` 指定外部数据目录，便于持久化：
 
 ```bash
 DATA_DIR=/app/data pnpm start
 ```
 
-Docker 中固定使用 `/app/data` 作为容器内数据目录。推荐挂载 Docker volume 或宿主机目录保存这些文件：
+Docker 中固定使用 `/app/data` 作为容器内数据目录。推荐把宿主机本地目录挂载到这里保存这些文件：
 
 ```text
 /app/data/nav.json
@@ -356,10 +342,10 @@ server 模式访问 `/admin` 登录后台。后台可编辑：
 
 ## 部署建议
 
-- **需要后台管理**：使用 server 模式部署，并持久化 `DATA_DIR`；推荐 Docker。
+- **需要后台管理**：使用 server 模式部署，并持久化数据目录；推荐 Docker。
 - **只需要公开导航页**：使用 static 模式构建，把 `out/` 上传到静态托管/CDN。
 - **发布镜像**：镜像可以内置默认 `nav.json` / `website.json` / `uploads/`；用户挂载自己的数据目录后会优先使用挂载数据。
-- **生产安全**：修改默认管理员密码和 session 密钥，不要提交 `.env.local`、`.env` 和 `data/uploads/`。
+- **生产安全**：修改默认管理员密码；需要固定登录密钥时设置 `SESSION_SECRET`，不要提交 `.env.local`、`.env` 和 `data/uploads/`。
 - **配置更新**：server 模式下后台保存会触发首页重新验证；static 模式下修改 JSON 后需要重新构建。
 
 ## 项目结构

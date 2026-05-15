@@ -33,6 +33,7 @@ import {
 	BiArchive,
 	BiCode,
 	BiDonateHeart,
+	BiImport,
 } from "react-icons/bi";
 import {
 	applyImportAtom,
@@ -43,6 +44,7 @@ import {
 } from "@/lib/store/admin";
 import { getIconImageSrc } from "@/lib/icon";
 import type { NavConfig, WebsiteData } from "@/types";
+import { AdminScrollTopButton } from "./scroll-top-button";
 
 type RouteKey =
 	| "categories"
@@ -55,7 +57,8 @@ type RouteKey =
 	| "engines"
 	| "plugins"
 	| "donation"
-	| "backup";
+	| "backup"
+	| "import";
 
 interface NavItem {
 	key: RouteKey;
@@ -79,6 +82,12 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
 				label: "网址管理",
 				icon: <BiGlobe className="size-5" />,
 				desc: "全局搜索与批量编辑网站条目",
+			},
+			{
+				key: "import",
+				label: "从外部导入",
+				icon: <BiImport className="size-5" />,
+				desc: "导入浏览器书签并自动解析分类",
 			},
 		],
 	},
@@ -348,6 +357,7 @@ export function AdminShell({ children }: { children?: React.ReactNode }) {
 			<BeforeUnloadGuard />
 			<SaveShortcutGuard />
 			<ImportEventBridge />
+			<AdminScrollTopButton />
 
 			{/* 侧栏 - 桌面端 */}
 			<aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-gray-200 bg-white lg:flex dark:border-neutral-800 dark:bg-neutral-900">

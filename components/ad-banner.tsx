@@ -60,7 +60,7 @@ function AdBannerImpl({ ads, aspectRatio = "16/9" }: { ads: AdConfig[]; aspectRa
 
 	return (
 		<div
-			className="relative overflow-hidden rounded-xl"
+			className="relative overflow-hidden rounded-md"
 			onMouseEnter={stopAutoPlay}
 			onMouseLeave={startAutoPlay}
 		>
@@ -85,12 +85,12 @@ function AdBannerImpl({ ads, aspectRatio = "16/9" }: { ads: AdConfig[]; aspectRa
 							<img
 								src={ad.image}
 								alt={ad.title}
-								className="h-full w-full object-cover rounded-xl"
+								className="h-full w-full object-cover"
 								loading={i === 0 ? "eager" : "lazy"}
 								decoding="async"
 							/>
 						) : (
-							<div className="flex h-full w-full flex-col items-center justify-center rounded-xl bg-linear-to-br from-primary/10 to-primary/5">
+							<div className="flex h-full w-full flex-col items-center justify-center bg-linear-to-br from-primary/10 to-primary/5">
 								<span className="text-3xl">📢</span>
 								<span className="mt-2 text-xs font-medium">{ad.title}</span>
 								{ad.description && (
@@ -113,7 +113,7 @@ function AdBannerImpl({ ads, aspectRatio = "16/9" }: { ads: AdConfig[]; aspectRa
 							className={`h-1.5 rounded-full transition-all duration-300 ${
 								i === current
 									? "w-6 bg-primary"
-									: "w-1.5 bg-black/20 dark:bg-white/20 hover:bg-black/40 dark:hover:bg-white/40"
+									: "w-1.5 bg-black/20 dark:bg-white/20 [@media(hover:hover)]:hover:bg-black/40 dark:[@media(hover:hover)]:hover:bg-white/40"
 							}`}
 							onClick={() => handleDotClick(i)}
 						/>

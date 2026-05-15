@@ -19,7 +19,10 @@ export const FloatingActions = memo(function FloatingActions({
 	const qrCode = useAtomValue(navQrCodeAtom);
 	const qrCodeText = useAtomValue(navQrCodeTextAtom);
 	const [showTop, setShowTop] = useState(false);
+	const [showQrPanel, setShowQrPanel] = useState(false);
+	const [supportsHover, setSupportsHover] = useState(false);
 	const rafRef = useRef(0);
+	const qrContainerRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
 		const onScroll = () => {
@@ -41,9 +44,49 @@ export const FloatingActions = memo(function FloatingActions({
 		};
 	}, []);
 
+	useEffect(() => {
+		const mq = window.matchMedia("(hover: hover) and (pointer: fine)");
+		const apply = (matches: boolean) => {
+			setSupportsHover(matches);
+			if (matches) {
+				setShowQrPanel(false);
+			}
+		};
+
+		apply(mq.matches);
+		const handleChange = (event: MediaQueryListEvent) => apply(event.matches);
+		mq.addEventListener("change", handleChange);
+		return () => mq.removeEventListener("change", handleChange);
+	}, []);
+
+	useEffect(() => {
+		if (!showQrPanel) return;
+
+		const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+			if (
+				qrContainerRef.current &&
+				!qrContainerRef.current.contains(event.target as Node)
+			) {
+				setShowQrPanel(false);
+			}
+		};
+
+		document.addEventListener("mousedown", handlePointerDown);
+		document.addEventListener("touchstart", handlePointerDown);
+		return () => {
+			document.removeEventListener("mousedown", handlePointerDown);
+			document.removeEventListener("touchstart", handlePointerDown);
+		};
+	}, [showQrPanel]);
+
 	const scrollToTop = useCallback(() => {
 		window.scrollTo({ top: 0, behavior: "smooth" });
 	}, []);
+
+	const toggleQrPanel = useCallback(() => {
+		if (supportsHover) return;
+		setShowQrPanel((prev) => !prev);
+	}, [supportsHover]);
 
 	return (
 		<div className="fixed bottom-8 right-6 z-50 flex flex-col items-center gap-3">
@@ -52,7 +95,7 @@ export const FloatingActions = memo(function FloatingActions({
 				isIconOnly
 				aria-label="回到顶部"
 				variant="tertiary"
-				className={`shadow bg-(--primary-foreground) rounded-full transition-all duration-300 hover:-translate-y-0.5 ${
+				className={`shadow bg-(--primary-foreground) rounded-full transition-all duration-300 [@media(hover:hover)]:hover:-translate-y-0.5 ${
 					showTop
 						? "pointer-events-auto opacity-100"
 						: "pointer-events-none translate-y-2 opacity-0"
@@ -74,10 +117,21 @@ export const FloatingActions = memo(function FloatingActions({
 			</Button>
 
 			{showQrCode && qrCode && (
-				<div className="group relative flex items-center">
-					<div className="pointer-events-none absolute bottom-0 right-12 translate-x-2 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:translate-x-0 group-hover:opacity-100">
+				<div ref={qrContainerRef} className="group relative flex items-center">
+					<div
+						id="floating-actions-qr-panel"
+						className={`absolute bottom-0 right-12 translate-x-2 opacity-0 transition-all duration-200 ${
+							showQrPanel
+								? "pointer-events-auto translate-x-0 opacity-100"
+								: "pointer-events-none"
+						} ${
+							supportsHover
+								? "[@media(hover:hover)]:group-hover:pointer-events-auto [@media(hover:hover)]:group-hover:translate-x-0 [@media(hover:hover)]:group-hover:opacity-100"
+								: ""
+						}`}
+					>
 						<div className="relative w-44 rounded-2xl bg-(--primary-foreground) p-4 text-center shadow-lg">
-							<div className="mx-auto flex h-28 w-28 items-center justify-center rounded-xl bg-default dark:bg-zinc-700 p-2">
+							<div className="mx-auto flex h-28 w-28 items-center justify-center rounded-xl bg-default p-2 dark:bg-zinc-700">
 								<Image
 									src={qrCode}
 									alt="公众号二维码"
@@ -102,8 +156,11 @@ export const FloatingActions = memo(function FloatingActions({
 						size="lg"
 						isIconOnly
 						aria-label="关注公众号"
+						aria-controls="floating-actions-qr-panel"
+						aria-expanded={showQrPanel}
 						variant="tertiary"
-						className="shadow bg-(--primary-foreground) rounded-full transition-all duration-300 hover:-translate-y-0.5"
+						className="shadow bg-(--primary-foreground) rounded-full transition-all duration-300 [@media(hover:hover)]:hover:-translate-y-0.5"
+						onPress={toggleQrPanel}
 					>
 						<AiOutlineQrcode />
 					</Button>

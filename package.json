@@ -1,8 +1,8 @@
 {
   "name": "go-nav",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
-  "packageManager": "pnpm@11.1.1",
+  "packageManager": "pnpm@11.1.2",
   "scripts": {
     "dev": "next dev",
     "dev:static": "BUILD_MODE=static next dev",
@@ -15,7 +15,7 @@
     "docker:up": "docker compose up -d --build",
     "docker:logs": "docker compose logs -f",
     "docker:down": "docker compose down",
-    "docker:run": "docker run --rm -p 3000:3000 --env-file .env -v go-nav-data:/app/data go-nav:latest",
+    "docker:run": "docker run --rm -p 3000:3000 -e ADMIN_USER=admin -e ADMIN_PASS=admin123 -v \"$PWD/go-nav-data:/app/data\" go-nav:latest",
     "docker:push": "sh scripts/docker-push.sh"
   },
   "dependencies": {

@@ -1,7 +1,7 @@
 "use client";
 
 import type { Key } from "@heroui/react";
-import { Button, Drawer } from "@heroui/react";
+import { Description, Drawer, Label, ListBox } from "@heroui/react";
 import type { SearchEngine } from "@/types";
 import { IconView } from "./icon-view";
 
@@ -33,8 +33,6 @@ export function EngineDrawer({
 		return [...base, ...engines.filter((e) => e.id !== "local")];
 	})();
 
-	const current = engineOptions.find((e) => e.id === currentEngine);
-
 	return (
 		<Drawer>
 			<Drawer.Backdrop isOpen={open} onOpenChange={onOpenChange}>
@@ -46,40 +44,46 @@ export function EngineDrawer({
 								切换搜索引擎
 							</Drawer.Heading>
 						</Drawer.Header>
-						<Drawer.Body className="p-3">
-							{current && (
-								<div className="mb-4 flex items-center gap-2 rounded-lg border bg-default/50 p-3">
-									<IconView icon={current.icon} size={24} textClassName="text-xl" />
-									<div className="min-w-0">
-										<div className="text-xs text-muted">当前引擎</div>
-										<div className="truncate text-sm font-medium">
-											{current.name}
-										</div>
-									</div>
-								</div>
-							)}
-							<div className="flex flex-col gap-2">
+						<Drawer.Body className="p-0">
+							<ListBox
+								aria-label="搜索引擎列表"
+								selectedKeys={
+									currentEngine === null
+										? new Set()
+										: new Set([String(currentEngine)])
+								}
+								selectionMode="single"
+								className="px-2"
+								onSelectionChange={(keys) => {
+									if (keys === "all") return;
+									const [key] = keys;
+									if (key == null) return;
+									onEngineChange(key);
+									onOpenChange(false);
+								}}
+							>
 								{engineOptions.map((e) => {
-									const active = e.id === currentEngine;
 									return (
-										<Button
+										<ListBox.Item
 											key={e.id}
-											variant={active ? "primary" : "outline"}
-											className="w-full justify-start gap-3"
-											onPress={() => {
-												onEngineChange(e.id);
-												onOpenChange(false);
-											}}
+											id={e.id}
+											textValue={e.name}
+											className="min-h-14 gap-2.5 rounded-xl px-4 py-2 data-[selected=true]:bg-(--primary-foreground)! data-[selected=true]:shadow!"
 										>
 											<IconView icon={e.icon} size={20} textClassName="text-xl" />
-											<span className="flex-1 truncate text-left text-sm font-medium">
-												{e.name}
-											</span>
-											{active && <span aria-hidden>✓</span>}
-										</Button>
+											<div className="flex min-w-0 flex-1 flex-col gap-0.5">
+												<Label className="truncate text-sm font-medium leading-5">
+													{e.name}
+												</Label>
+												<Description className="truncate text-xs leading-4 text-muted">
+													{e.id === "local" ? "搜索本站内容" : "外部搜索引擎"}
+												</Description>
+											</div>
+											<ListBox.ItemIndicator />
+										</ListBox.Item>
 									);
 								})}
-							</div>
+							</ListBox>
 						</Drawer.Body>
 					</Drawer.Dialog>
 				</Drawer.Content>

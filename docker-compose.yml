@@ -8,10 +8,7 @@ services:
     environment:
       ADMIN_USER: ${ADMIN_USER:-admin}
       ADMIN_PASS: ${ADMIN_PASS:-admin123}
-      SESSION_SECRET: ${SESSION_SECRET:-please-change-me-to-a-long-random-string}
-      DATA_DIR: /app/data
+      # Optional. Leave unset to auto-generate and persist in ./go-nav-data/.session-secret.
+      # SESSION_SECRET: ${SESSION_SECRET}
     volumes:
-      - ${DATA_MOUNT:-go-nav-data:/app/data}
-
-volumes:
-  go-nav-data:
+      - ./go-nav-data:/app/data
