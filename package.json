@@ -19,6 +19,9 @@
     "docker:push": "sh scripts/docker-push.sh"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@heroui/react": "^3.0.5",
     "@heroui/styles": "^3.0.5",
     "@iconify/react": "^6.0.2",
@@ -37,6 +40,7 @@
     "@types/node": "^25",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cross-env": "^10.1.0",
     "eslint": "^10",
     "eslint-config-next": "16.2.6",
     "tailwindcss": "^4",
