@@ -51,3 +51,4 @@ next-env.d.ts
 # local Docker bind mount and generated Docker session secret
 /go-nav-data/
 /data/.session-secret
+/data/sync.json

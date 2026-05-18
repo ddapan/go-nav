@@ -16,3 +16,6 @@ export const NAV_FILE = path.join(DATA_DIR, "nav.json");
 
 /** 上传图片目录（后台上传的文件落在这里） */
 export const UPLOADS_DIR = path.join(DATA_DIR, "uploads");
+
+/** 远端同步配置（包含凭据，只保存在本机 data 目录，不打包进远端备份） */
+export const SYNC_FILE = path.join(DATA_DIR, "sync.json");
