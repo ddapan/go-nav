@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 
 /**
@@ -8,14 +9,96 @@ export const DATA_DIR = process.env.DATA_DIR
 	? path.resolve(process.env.DATA_DIR)
 	: path.join(process.cwd(), "data");
 
-/** 网站基础配置文件路径 */
-export const WEBSITE_FILE = path.join(DATA_DIR, "website.json");
+const STRUCTURED_FILE_EXTENSIONS = [".yaml", ".yml", ".json"] as const;
 
-/** 导航数据（分类/网站/搜索引擎）文件路径 */
-export const NAV_FILE = path.join(DATA_DIR, "nav.json");
+export type StructuredFileFormat = "yaml" | "json";
+
+function normalizeStructuredFileFormat(
+	raw: string | undefined,
+): StructuredFileFormat {
+	const value = (raw || "").trim().toLowerCase();
+	if (value === "yaml" || value === "yml") return "yaml";
+	return "json";
+}
+
+const STRUCTURED_WRITE_FORMAT = normalizeStructuredFileFormat(
+	process.env.DATA_FILE_FORMAT,
+);
+
+function extensionByFormat(format: StructuredFileFormat): ".yaml" | ".json" {
+	return format === "yaml" ? ".yaml" : ".json";
+}
+
+function resolveStructuredDataReadOrder(): readonly string[] {
+	if (STRUCTURED_WRITE_FORMAT === "yaml") {
+		return [".yaml", ".yml", ".json"];
+	}
+	return [".json", ".yaml", ".yml"];
+}
+
+function resolveStructuredDataFile(baseName: string): string | null {
+	for (const ext of resolveStructuredDataReadOrder()) {
+		const file = path.join(DATA_DIR, `${baseName}${ext}`);
+		if (fs.existsSync(file)) return file;
+	}
+	return null;
+}
+
+function buildStructuredDataFile(baseName: string, ext: string): string {
+	return path.join(DATA_DIR, `${baseName}${ext}`);
+}
+
+export function getStructuredFileFormat(file: string): StructuredFileFormat {
+	return file.toLowerCase().endsWith(".json") ? "json" : "yaml";
+}
+
+export function listStructuredDataFileCandidates(baseName: string): string[] {
+	return STRUCTURED_FILE_EXTENSIONS.map((ext) =>
+		buildStructuredDataFile(baseName, ext),
+	);
+}
+
+/** 网站基础配置文件路径（读取优先当前写入格式，再 fallback 到其余格式） */
+export function resolveWebsiteFilePathForRead(): string {
+	return (
+		resolveStructuredDataFile("website") ??
+		buildStructuredDataFile("website", extensionByFormat(STRUCTURED_WRITE_FORMAT))
+	);
+}
+
+/** 网站基础配置文件路径（写入格式由 DATA_FILE_FORMAT 控制，默认 json） */
+export function resolveWebsiteFilePathForWrite(): string {
+	return buildStructuredDataFile(
+		"website",
+		extensionByFormat(STRUCTURED_WRITE_FORMAT),
+	);
+}
+
+/** 导航数据文件路径（读取优先当前写入格式，再 fallback 到其余格式） */
+export function resolveNavFilePathForRead(): string {
+	return (
+		resolveStructuredDataFile("nav") ??
+		buildStructuredDataFile("nav", extensionByFormat(STRUCTURED_WRITE_FORMAT))
+	);
+}
+
+/** 导航数据文件路径（写入格式由 DATA_FILE_FORMAT 控制，默认 json） */
+export function resolveNavFilePathForWrite(): string {
+	return buildStructuredDataFile("nav", extensionByFormat(STRUCTURED_WRITE_FORMAT));
+}
 
 /** 上传图片目录（后台上传的文件落在这里） */
 export const UPLOADS_DIR = path.join(DATA_DIR, "uploads");
 
-/** 远端同步配置（包含凭据，只保存在本机 data 目录，不打包进远端备份） */
-export const SYNC_FILE = path.join(DATA_DIR, "sync.json");
+/** 远端同步配置文件路径（读取优先当前写入格式，再 fallback 到其余格式） */
+export function resolveSyncFilePathForRead(): string {
+	return (
+		resolveStructuredDataFile("sync") ??
+		buildStructuredDataFile("sync", extensionByFormat(STRUCTURED_WRITE_FORMAT))
+	);
+}
+
+/** 远端同步配置文件路径（写入格式由 DATA_FILE_FORMAT 控制，默认 json） */
+export function resolveSyncFilePathForWrite(): string {
+	return buildStructuredDataFile("sync", extensionByFormat(STRUCTURED_WRITE_FORMAT));
+}

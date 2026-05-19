@@ -1,12 +1,12 @@
 "use client";
 
 import {
-    Button,
-    Input,
-    Label,
-    Separator,
-    Switch,
-    TextField,
+	Button,
+	Input,
+	Label,
+	Separator,
+	Switch,
+	TextField,
 } from "@heroui/react";
 import { BiSun, BiMoon, BiDesktop } from "react-icons/bi";
 import type { CardStyle, LayoutConfig, ThemeMode, NavConfig } from "@/types";
@@ -261,7 +261,7 @@ function ThemeEditor({
 											<div className="h-3 w-28 rounded bg-zinc-900/80 dark:bg-zinc-100/80" />
 											<div className="mt-2 h-2 w-40 rounded bg-zinc-300 dark:bg-zinc-600" />
 										</div>
-										<div className="absolute bottom-[-18px] left-8 h-16 w-48 -rotate-6 rounded-lg border bg-gradient-to-br from-zinc-100 to-zinc-300 shadow-lg dark:border-white/10 dark:from-zinc-800 dark:to-zinc-950" />
+										<div className="absolute -bottom-4.5 left-8 h-16 w-48 -rotate-6 rounded-lg border bg-linear-to-br from-zinc-100 to-zinc-300 shadow-lg dark:border-white/10 dark:from-zinc-800 dark:to-zinc-950" />
 									</div>
 								)}
 							</div>
@@ -407,7 +407,8 @@ function LayoutEditor({
 }) {
 	const l = layout ?? {};
 	const patch = (p: Partial<LayoutConfig>) => onChange({ ...l, ...p });
-	const getLayoutValue = (key: keyof LayoutConfig) => l[key] ?? DEFAULT_LAYOUT[key];
+	const getLayoutValue = (key: keyof LayoutConfig) =>
+		l[key] ?? DEFAULT_LAYOUT[key];
 	const getToggleValue = (key: keyof LayoutConfig) => {
 		if (key === "showFooterQrCode" && !getLayoutValue("showFooter")) {
 			return false;
@@ -481,6 +482,10 @@ function LayoutEditor({
 		{
 			label: "自动访问内网（可达时优先）",
 			key: "autoUseIntranet",
+		},
+		{
+			label: "点击卡片先进入网址详情页",
+			key: "enableSiteDetailPage",
 		},
 	];
 
@@ -599,9 +604,7 @@ function LayoutEditor({
 					<Label className="text-sm font-medium">图标默认内间距</Label>
 					<TextField
 						value={l.defaultIconPadding ?? ""}
-						onChange={(v) =>
-							patch({ defaultIconPadding: v || undefined })
-						}
+						onChange={(v) => patch({ defaultIconPadding: v || undefined })}
 					>
 						<Label className="sr-only">defaultIconPadding</Label>
 						<Input placeholder="8 / 8px / 留空" />

@@ -105,7 +105,7 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
 				key: "source-file",
 				label: "编辑源文件",
 				icon: <BiFile className="size-5" />,
-				desc: "直接编辑 website.json 源文件",
+				desc: "直接编辑 website 配置源文件（JSON/YAML）",
 			},
 		],
 	},
