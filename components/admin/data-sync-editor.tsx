@@ -14,7 +14,7 @@ import {
 	TextField,
 	toast,
 } from "@heroui/react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	BiCheckCircle,
 	BiCloudDownload,
@@ -43,6 +43,24 @@ interface DataSyncRunResult {
 	size?: number;
 	restored?: BackupRestoreResult;
 }
+
+interface DataSyncProgressEvent {
+	at: string;
+	level: "info" | "success" | "error";
+	message: string;
+}
+
+interface SyncStreamLogMessage {
+	type: "log";
+	event: DataSyncProgressEvent;
+}
+
+interface SyncStreamResultMessage {
+	type: "result";
+	result: DataSyncRunResult;
+}
+
+type SyncStreamMessage = SyncStreamLogMessage | SyncStreamResultMessage;
 
 interface PublicDataSyncConfig {
 	github: {
@@ -119,6 +137,12 @@ function formatBytes(size?: number): string {
 	return `${(size / (1024 * 1024)).toFixed(2)} MB`;
 }
 
+function formatLogTime(at: string): string {
+	const date = new Date(at);
+	if (Number.isNaN(date.getTime())) return "--:--:--";
+	return date.toLocaleTimeString("zh-CN", { hour12: false });
+}
+
 function Field({
 	label,
 	description,
@@ -142,6 +166,14 @@ export function DataSyncEditor() {
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
 	const [running, setRunning] = useState<string | null>(null);
+	const [syncLogOpen, setSyncLogOpen] = useState(false);
+	const [syncLogRunning, setSyncLogRunning] = useState(false);
+	const [syncLogStatus, setSyncLogStatus] = useState<
+		"idle" | "success" | "error"
+	>("idle");
+	const [syncLogTitle, setSyncLogTitle] = useState("");
+	const [syncLogs, setSyncLogs] = useState<DataSyncProgressEvent[]>([]);
+	const syncLogBodyRef = useRef<HTMLDivElement | null>(null);
 
 	const [webdavPickerOpen, setWebdavPickerOpen] = useState(false);
 	const [webdavBackupsLoading, setWebdavBackupsLoading] = useState(false);
@@ -175,6 +207,12 @@ export function DataSyncEditor() {
 	useEffect(() => {
 		void loadConfig();
 	}, [loadConfig]);
+
+	useEffect(() => {
+		const el = syncLogBodyRef.current;
+		if (!el) return;
+		el.scrollTop = el.scrollHeight;
+	}, [syncLogs, syncLogOpen]);
 
 	const saveConfig = useCallback(
 		async (silent = false) => {
@@ -226,39 +264,126 @@ export function DataSyncEditor() {
 			target?: string,
 		): Promise<boolean> => {
 			const key = `${provider}:${action}`;
+			const enableLogModal = provider === "github" && action === "push";
 			setRunning(key);
 			try {
+				if (enableLogModal) {
+					setSyncLogTitle(`${providerLabel(provider)} ${actionLabel(action)}日志`);
+					setSyncLogOpen(true);
+					setSyncLogRunning(true);
+					setSyncLogStatus("idle");
+					setSyncLogs([]);
+				}
+
 				await saveConfig(true);
-				const res = await fetch("/api/sync/action/", {
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ provider, action, target }),
-				});
-				const data = (await res.json().catch(() => ({}))) as
-					| DataSyncRunResult
-					| { error?: string; message?: string };
-				if (!res.ok) {
-					throw new Error(
-						"message" in data && data.message
-							? data.message
-							: "error" in data && data.error
-								? data.error
-								: `${actionLabel(action)}失败 (${res.status})`,
-					);
+				let result: DataSyncRunResult | null = null;
+
+				if (enableLogModal) {
+					const res = await fetch("/api/sync/action/", {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({ provider, action, target, stream: true }),
+					});
+					if (!res.ok) {
+						const data = (await res.json().catch(() => ({}))) as {
+							error?: string;
+							message?: string;
+						};
+						throw new Error(
+							data.message || data.error || `${actionLabel(action)}失败 (${res.status})`,
+						);
+					}
+					if (!res.body) {
+						throw new Error("同步日志流读取失败，请稍后重试");
+					}
+
+					const reader = res.body.getReader();
+					const decoder = new TextDecoder();
+					let buffer = "";
+
+					while (true) {
+						const { value, done } = await reader.read();
+						if (done) break;
+						buffer += decoder.decode(value, { stream: true });
+						let newlineIndex = buffer.indexOf("\n");
+						while (newlineIndex >= 0) {
+							const line = buffer.slice(0, newlineIndex).trim();
+							buffer = buffer.slice(newlineIndex + 1);
+							if (line) {
+								const payload = JSON.parse(line) as SyncStreamMessage;
+								if (payload.type === "log") {
+									setSyncLogs((prev) => [...prev, payload.event]);
+								} else {
+									result = payload.result;
+								}
+							}
+							newlineIndex = buffer.indexOf("\n");
+						}
+					}
+					const tail = buffer.trim();
+					if (tail) {
+						const payload = JSON.parse(tail) as SyncStreamMessage;
+						if (payload.type === "log") {
+							setSyncLogs((prev) => [...prev, payload.event]);
+						} else {
+							result = payload.result;
+						}
+					}
+					if (!result) {
+						throw new Error("同步已结束，但未收到最终结果");
+					}
+				} else {
+					const res = await fetch("/api/sync/action/", {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({ provider, action, target }),
+					});
+					const data = (await res.json().catch(() => ({}))) as
+						| DataSyncRunResult
+						| { error?: string; message?: string };
+					if (!res.ok) {
+						throw new Error(
+							"message" in data && data.message
+								? data.message
+								: "error" in data && data.error
+									? data.error
+									: `${actionLabel(action)}失败 (${res.status})`,
+						);
+					}
+					result = data as DataSyncRunResult;
+				}
+
+				if (!result.ok) {
+					throw new Error(result.message || `${actionLabel(action)}失败`);
 				}
 				const successMessage =
-					"message" in data && data.message
-						? data.message
-						: `${providerLabel(provider)} ${actionLabel(action)}成功`;
+					result.message || `${providerLabel(provider)} ${actionLabel(action)}成功`;
 				toast.success(successMessage);
+				if (enableLogModal) {
+					setSyncLogStatus("success");
+				}
 				if (action === "pull") {
 					setTimeout(() => window.location.reload(), 900);
 				}
 				return true;
 			} catch (e) {
+				if (enableLogModal) {
+					setSyncLogStatus("error");
+					setSyncLogs((prev) => [
+						...prev,
+						{
+							at: new Date().toISOString(),
+							level: "error",
+							message: (e as Error).message,
+						},
+					]);
+				}
 				toast.danger((e as Error).message);
 				return false;
 			} finally {
+				if (enableLogModal) {
+					setSyncLogRunning(false);
+				}
 				setRunning(null);
 			}
 		},
@@ -402,9 +527,9 @@ export function DataSyncEditor() {
 							数据同步
 						</h3>
 						<p className="text-xs text-default-500">
-							GitHub 同步为目录文件模式（website.json / nav.json /
+							GitHub 同步为目录文件模式（website.yaml/json、nav.yaml/json、
 							uploads），WebDAV 同步为 zip 备份模式。同步凭据只保存在本机
-							data/sync.json，不会写入远端备份数据。
+							data/sync.*，不会写入远端备份数据。
 						</p>
 					</div>
 					<div className="flex flex-wrap gap-2 text-xs">
@@ -454,7 +579,8 @@ export function DataSyncEditor() {
 									<div>
 										<Card.Title>GitHub 同步</Card.Title>
 										<Card.Description>
-											按目录同步 `website.json`、`nav.json` 和 `uploads/*`。
+											按目录同步 `website.yaml/json`、`nav.yaml/json` 和
+											`uploads/*`。
 										</Card.Description>
 									</div>
 								</div>
@@ -706,9 +832,10 @@ export function DataSyncEditor() {
 					<p className="mb-1.5 font-semibold">操作提示</p>
 					<ul className="list-disc list-inside space-y-1">
 						<li>
-							GitHub 同步会把当前服务器 data 中的 website.json、nav.json 和
-							uploads 文件按目录写入远端（例如配置为 backups 时会写入
-							<code>backups/website.json</code>、<code>backups/nav.json</code>、
+							GitHub 同步会把当前服务器 data 中的 website/nav 配置与 uploads
+							文件按目录写入远端（例如配置为 backups 时会写入
+							<code>backups/website.yaml</code>、<code>backups/website.json</code>、
+							<code>backups/nav.yaml</code>、<code>backups/nav.json</code>、
 							<code>backups/uploads/*</code>）
 						</li>
 						<li>
@@ -717,7 +844,7 @@ export function DataSyncEditor() {
 						</li>
 						<li>
 							WebDAV 拉取需先在弹窗中选择备份文件，恢复后会覆盖本机
-							website.json、nav.json，并写入备份中的 uploads 文件
+							website/nav 配置，并写入备份中的 uploads 文件
 						</li>
 						<li>
 							GitHub Token 获取路径：GitHub 右上角头像 → Settings → Developer
@@ -736,6 +863,76 @@ export function DataSyncEditor() {
 					</ul>
 				</div>
 			</div>
+
+			<Modal.Backdrop
+				isOpen={syncLogOpen}
+				onOpenChange={(open) => {
+					if (syncLogRunning) return;
+					setSyncLogOpen(open);
+				}}
+				isDismissable={!syncLogRunning}
+			>
+				<Modal.Container size="lg" scroll="inside">
+					<Modal.Dialog>
+						{!syncLogRunning ? <Modal.CloseTrigger /> : null}
+						<Modal.Header>
+							<Modal.Heading>{syncLogTitle || "同步日志"}</Modal.Heading>
+						</Modal.Header>
+						<Modal.Body className="space-y-3">
+							<div className="flex items-center justify-between rounded-md border border-default-200 bg-default-50 px-3 py-2 text-xs">
+								<span className="text-default-600">
+									{syncLogRunning ? "正在执行中..." : "执行完成"}
+								</span>
+								<span
+									className={
+										syncLogStatus === "success"
+											? "text-success"
+											: syncLogStatus === "error"
+												? "text-danger"
+												: "text-default-500"
+									}
+								>
+									{syncLogStatus === "success"
+										? "成功"
+										: syncLogStatus === "error"
+											? "失败"
+											: "进行中"}
+								</span>
+							</div>
+							<div
+								ref={syncLogBodyRef}
+								className="h-80 overflow-y-auto rounded-lg border border-default-200 bg-black px-3 py-2 font-mono text-xs leading-5 text-green-300"
+							>
+								{syncLogs.length === 0 ? (
+									<div className="flex h-full items-center justify-center text-default-300">
+										<Spinner size="sm" />
+									</div>
+								) : (
+									syncLogs.map((item, index) => (
+										<p
+											key={`${item.at}-${index}`}
+											className={
+												item.level === "error"
+													? "text-red-300"
+													: item.level === "success"
+														? "text-emerald-300"
+														: "text-sky-200"
+											}
+										>
+											[{formatLogTime(item.at)}] {item.message}
+										</p>
+									))
+								)}
+							</div>
+						</Modal.Body>
+						<Modal.Footer>
+							<Button variant="secondary" slot="close" isDisabled={syncLogRunning}>
+								关闭
+							</Button>
+						</Modal.Footer>
+					</Modal.Dialog>
+				</Modal.Container>
+			</Modal.Backdrop>
 
 			<Modal.Backdrop
 				isOpen={webdavPickerOpen}

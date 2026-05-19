@@ -3,13 +3,13 @@
 import type { Key } from "@heroui/react";
 import { EmptyState, Label, ListBox, SearchField, Select } from "@heroui/react";
 import {
-    useCallback,
-    useDeferredValue,
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
-    useTransition,
+	useCallback,
+	useDeferredValue,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+	useTransition,
 } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import type { LayoutConfig, NavSite, SearchEngine } from "@/types";
@@ -439,7 +439,7 @@ export function SearchBar({
 				>
 					<Select
 						aria-label="选择搜索引擎"
-						className="w-full"
+						className="w-full h-9"
 						value={engineId}
 						onChange={(v) => setEngineId(v)}
 					>

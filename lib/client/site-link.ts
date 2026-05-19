@@ -26,7 +26,30 @@ function isHttpUrl(url: string) {
 }
 
 function sanitizeUrl(url: string | undefined): string {
-	return (url ?? "").trim();
+	const value = (url ?? "").trim();
+	if (!value) return "";
+	if (
+		value.startsWith("/") ||
+		value.startsWith("./") ||
+		value.startsWith("../") ||
+		value.startsWith("#")
+	) {
+		return value;
+	}
+	if (/^[a-z][a-z\d+\-.]*:/i.test(value)) {
+		if (/^localhost:\d+$/i.test(value) || /^127\.0\.0\.1:\d+$/i.test(value)) {
+			return `http://${value}`;
+		}
+		return value;
+	}
+	if (value.startsWith("//")) return `https:${value}`;
+	if (/^(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/i.test(value)) {
+		return `http://${value}`;
+	}
+	if (/^[^\s/]+\.[^\s/]+/.test(value)) {
+		return `https://${value}`;
+	}
+	return value;
 }
 
 function hasIntranetUrl(site: SiteLinkLike): boolean {

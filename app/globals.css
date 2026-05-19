@@ -125,3 +125,8 @@ a[data-disabled] {
 :where(.dark) .input-group {
 	border: 1px solid var(--border) !important;
 }
+
+.dark .search-field__group,
+:where(.dark) .search-field__group {
+	border: 1px solid var(--border) !important;
+}
