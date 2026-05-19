@@ -2,6 +2,8 @@ import type { MetadataRoute } from "next";
 import { getNav, getWebsiteData } from "@/lib/config";
 import { collectSiteDetailEntries } from "@/lib/site-detail";
 
+export const dynamic = "force-static";
+
 export default function sitemap(): MetadataRoute.Sitemap {
 	const origin = resolveSiteOrigin();
 	const nav = getNav();
