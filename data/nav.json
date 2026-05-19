@@ -10,30 +10,13 @@
   ],
   "logo": "/images/logo.svg",
   "favicon": "/favicon.ico",
-  "author": "dengxiwang",
-  "copyright": "版权所有 © 2026 GOTAB. 保留所有权利",
-  "icp": "豫ICP备2023009053号-6",
-  "beian": "豫公网安备41072402001147号",
-  "qrCode": "https://www.gotab.cn/images/wx.webp",
-  "qrCodeText": "微信扫一扫",
-  "footerLinks": [
-    {
-      "label": "GOTAB 官网",
-      "href": "https://www.gotab.cn"
-    },
-    {
-      "label": "作者 GitHub",
-      "href": "https://github.com/dengxiwang/go-nav"
-    },
-    {
-      "label": " GoTab 新标签页",
-      "href": "https://web.gotab.cn"
-    },
-    {
-      "label": "博客",
-      "href": "https://blog.gotab.cn"
-    }
-  ],
+  "author": "ddapan",
+  "copyright": "",
+  "icp": "",
+  "beian": "",
+  "qrCode": "",
+  "qrCodeText": "",
+  "footerLinks": [],
   "themeMode": "system",
   "search": {
     "defaultEngine": "local",
@@ -43,12 +26,6 @@
     "enableTabFocus": true,
     "placeholder": "搜索网站或直接按 Enter 通过外部引擎搜索...",
     "engines": [
-      {
-        "id": "baidu",
-        "name": "百度",
-        "icon": "/images/baidu.svg",
-        "url": "https://www.baidu.com/s?wd={query}&tn=68018901_11_oem_dg"
-      },
       {
         "id": "bing",
         "name": "必应",
@@ -60,28 +37,27 @@
         "name": "谷歌",
         "icon": "/images/google.svg",
         "url": "https://www.google.com/search?q={query}"
+      },
+      {
+        "id": "baidu",
+        "name": "百度",
+        "icon": "/images/baidu.svg",
+        "url": "https://www.baidu.com/s?wd={query}&tn=68018901_11_oem_dg"
       }
     ]
   },
-  "ads": [
-    {
-      "id": "ad-1778577116508",
-      "title": "雨云服务器",
-      "description": "",
-      "image": "https://blog.gotab.cn/upload/rainyun_ad.webp",
-      "url": "https://www.rainyun.com/gotab_",
-      "enabled": true
-    }
-  ],
+  "ads": [],
   "plugins": [],
   "layout": {
     "maxWidth": "1400",
-    "showFooter": true,
-    "showFooterQrCode": true,
+    "showFooter": false,
+    "showFooterQrCode": false,
     "showFloatingQrCode": true,
     "showFloatingActions": true,
     "defaultIconPadding": "8",
-    "linkTarget": "new"
+    "linkTarget": "new",
+    "cardStyle": "compact"
   },
-  "adsAspectRatio": "4/3"
+  "adsAspectRatio": "4/3",
+  "showAds": false
 }
