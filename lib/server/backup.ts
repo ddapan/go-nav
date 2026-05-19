@@ -2,8 +2,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { UPLOADS_DIR } from "@/lib/server/paths";
 import {
+	parseStructuredContent,
 	readNav,
 	readWebsiteData,
+	stringifyStructuredContent,
 	writeNav,
 	writeWebsiteData,
 } from "@/lib/server/store";
@@ -21,6 +23,10 @@ const ALLOWED_UPLOAD_EXTENSIONS = new Set([
 	".svg",
 	".ico",
 ]);
+const WEBSITE_BACKUP_IMPORT_FILES = ["website.yaml", "website.yml", "website.json"] as const;
+const NAV_BACKUP_IMPORT_FILES = ["nav.yaml", "nav.yml", "nav.json"] as const;
+const WEBSITE_BACKUP_EXPORT_FILES = ["website.yaml", "website.json"] as const;
+const NAV_BACKUP_EXPORT_FILES = ["nav.yaml", "nav.json"] as const;
 
 export interface BackupRestoreResult {
 	website: boolean;
@@ -68,14 +74,8 @@ export function createDataBackupZip(): Buffer {
 			name: "meta.json",
 			data: Buffer.from(JSON.stringify(meta, null, 2), "utf8"),
 		},
-		{
-			name: "website.json",
-			data: Buffer.from(JSON.stringify(websiteData, null, 2), "utf8"),
-		},
-		{
-			name: "nav.json",
-			data: Buffer.from(JSON.stringify(nav, null, 2), "utf8"),
-		},
+		...collectStructuredBackupEntries("website", websiteData),
+		...collectStructuredBackupEntries("nav", nav),
 		...readAllUploads(),
 	];
 	return createZip(entries);
@@ -96,28 +96,35 @@ export function restoreDataBackupZip(buf: Buffer): BackupRestoreResult {
 	let websiteData: WebsiteData | null = null;
 	let nav: NavConfig | null = null;
 	const uploads: { name: string; data: Buffer }[] = [];
+	const websiteEntry = findBackupEntry(entries, WEBSITE_BACKUP_IMPORT_FILES);
+	const navEntry = findBackupEntry(entries, NAV_BACKUP_IMPORT_FILES);
 
 	for (const ent of entries) {
-		if (ent.name === "website.json") {
-			try {
-				websiteData = JSON.parse(ent.data.toString("utf8")) as WebsiteData;
-			} catch {
-				throw new Error("website.json 解析失败");
-			}
-		} else if (ent.name === "nav.json") {
-			try {
-				nav = JSON.parse(ent.data.toString("utf8")) as NavConfig;
-			} catch {
-				throw new Error("nav.json 解析失败");
-			}
-		} else if (ent.name.startsWith("uploads/")) {
+		if (ent.name.startsWith("uploads/")) {
 			const safe = safeUploadName(ent.name.slice("uploads/".length));
 			if (safe) uploads.push({ name: safe, data: ent.data });
 		}
 	}
 
+	if (websiteEntry) {
+		try {
+			websiteData = parseStructuredContent<WebsiteData>(
+				websiteEntry.data.toString("utf8"),
+			);
+		} catch {
+			throw new Error(`${websiteEntry.name} 解析失败`);
+		}
+	}
+	if (navEntry) {
+		try {
+			nav = parseStructuredContent<NavConfig>(navEntry.data.toString("utf8"));
+		} catch {
+			throw new Error(`${navEntry.name} 解析失败`);
+		}
+	}
+
 	if (!websiteData && !nav && uploads.length === 0) {
-		throw new Error("压缩包中未找到 website.json / nav.json / uploads/");
+		throw new Error("压缩包中未找到 website/nav 配置文件或 uploads/");
 	}
 
 	if (websiteData) writeWebsiteData(websiteData);
@@ -134,4 +141,32 @@ export function restoreDataBackupZip(buf: Buffer): BackupRestoreResult {
 		nav: !!nav,
 		uploads: uploads.length,
 	};
+}
+
+function collectStructuredBackupEntries(
+	baseName: "website" | "nav",
+	value: unknown,
+): ZipEntry[] {
+	const names =
+		baseName === "website" ? WEBSITE_BACKUP_EXPORT_FILES : NAV_BACKUP_EXPORT_FILES;
+	return names.map((name) => ({
+		name,
+		data: Buffer.from(
+			name.endsWith(".json")
+				? JSON.stringify(value, null, 2)
+				: stringifyStructuredContent(value, `${baseName}.yaml`),
+			"utf8",
+		),
+	}));
+}
+
+function findBackupEntry(
+	entries: ZipEntry[],
+	names: readonly string[],
+): ZipEntry | null {
+	for (const name of names) {
+		const matched = entries.find((entry) => entry.name === name);
+		if (matched) return matched;
+	}
+	return null;
 }

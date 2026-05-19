@@ -4,6 +4,7 @@ import type { Selection } from "@heroui/react";
 import { Chip, EmptyState, ListBox, ListBoxItem } from "@heroui/react";
 import type { Key } from "@heroui/react";
 import { memo, useCallback, useMemo } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { useAtomValue } from "jotai";
 import type { NavCategory } from "@/types";
 import { activeIdAtom } from "@/lib/store/site";
@@ -33,9 +34,12 @@ export const CategorySidebar = memo(function CategorySidebar({
 	onItemClick?: (id: string) => void;
 }) {
 	const activeId = useAtomValue(activeIdAtom);
+	const pathname = usePathname();
+	const router = useRouter();
 	const topIds = useMemo(() => categories.map((c) => c.id), [categories]);
 	const selectedKey =
 		!activeId || !topIds.includes(activeId) ? "home" : activeId;
+	const inDetailPage = pathname.startsWith("/site/");
 
 	const selectedKeys: Selection = useMemo(
 		() => new Set([selectedKey]),
@@ -58,6 +62,17 @@ export const CategorySidebar = memo(function CategorySidebar({
 	const jumpTo = useCallback(
 		(key: Key) => {
 			const id = String(key);
+			if (inDetailPage) {
+				if (id === "home") {
+					onItemClick?.("");
+					router.push("/");
+					return;
+				}
+				onItemClick?.(id);
+				router.push(`/#${encodeURIComponent(id)}`);
+				return;
+			}
+
 			if (id === "home") {
 				if (typeof window !== "undefined") {
 					window.scrollTo({ top: 0, behavior: "smooth" });
@@ -71,7 +86,7 @@ export const CategorySidebar = memo(function CategorySidebar({
 				}
 			}
 		},
-		[onItemClick],
+		[inDetailPage, onItemClick, router],
 	);
 
 	if (categories.length === 0) {

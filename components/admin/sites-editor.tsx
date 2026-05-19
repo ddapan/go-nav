@@ -1300,7 +1300,7 @@ export function SitesEditor() {
 															<Table.Column className="min-w-52">
 																描述
 															</Table.Column>
-															<Table.Column className="w-24">
+															<Table.Column className="min-w-24">
 																预览图
 															</Table.Column>
 															<Table.Column className="min-w-40">
