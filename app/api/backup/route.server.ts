@@ -17,8 +17,8 @@ async function requireAuth(): Promise<boolean> {
 
 /**
  * GET：导出完整备份为 ZIP 压缩包，包含
- *   - website.yaml / website.json
- *   - nav.yaml / nav.json
+ *   - website.json
+ *   - nav.json
  *   - uploads/<filename>...
  */
 export async function GET() {

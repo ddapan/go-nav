@@ -1,21 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import {
-	listStructuredDataFileCandidates,
-	resolveSyncFilePathForRead,
-	resolveSyncFilePathForWrite,
-	UPLOADS_DIR,
-} from "@/lib/server/paths";
-import {
-	parseStructuredContent,
-	readJsonOr,
-	readNav,
-	readWebsiteData,
-	stringifyStructuredContent,
-	writeJsonAtomic,
-	writeNav,
-	writeWebsiteData,
-} from "@/lib/server/store";
+import { SYNC_FILE, UPLOADS_DIR } from "@/lib/server/paths";
+import { readJsonOr, readNav, readWebsiteData, writeJsonAtomic, writeNav, writeWebsiteData } from "@/lib/server/store";
 import {
 	createDataBackupZip,
 	MAX_BACKUP_SIZE,
@@ -29,10 +15,6 @@ export type SyncAction = "push" | "pull";
 
 const WEBDAV_BACKUP_FILE_PREFIX = "go-nav-data";
 const WEBDAV_BACKUP_FILE_SUFFIX = ".zip";
-const WEBSITE_SYNC_IMPORT_FILES = ["website.yaml", "website.yml", "website.json"] as const;
-const NAV_SYNC_IMPORT_FILES = ["nav.yaml", "nav.yml", "nav.json"] as const;
-const WEBSITE_SYNC_EXPORT_FILES = ["website.yaml", "website.json"] as const;
-const NAV_SYNC_EXPORT_FILES = ["nav.yaml", "nav.json"] as const;
 
 const ALLOWED_UPLOAD_EXTENSIONS = new Set([
 	".png",
@@ -95,18 +77,7 @@ export interface DataSyncConfigInput {
 
 export interface DataSyncRunOptions {
 	target?: string;
-	onProgress?: DataSyncProgressLogger;
 }
-
-export interface DataSyncProgressEvent {
-	at: string;
-	level: "info" | "success" | "error";
-	message: string;
-}
-
-export type DataSyncProgressLogger = (
-	event: DataSyncProgressEvent,
-) => void | Promise<void>;
 
 interface GitHubRepoParts {
 	owner: string;
@@ -292,8 +263,14 @@ function collectGitHubSyncFiles(baseDir: string): SyncFileEntry[] {
 	const websiteData = readWebsiteData();
 	const nav = readNav();
 	const files: SyncFileEntry[] = [
-		...collectStructuredSyncEntries(baseDir, "website", websiteData),
-		...collectStructuredSyncEntries(baseDir, "nav", nav),
+		{
+			path: `${baseDir}/website.json`,
+			data: Buffer.from(JSON.stringify(websiteData, null, 2), "utf8"),
+		},
+		{
+			path: `${baseDir}/nav.json`,
+			data: Buffer.from(JSON.stringify(nav, null, 2), "utf8"),
+		},
 	];
 
 	for (const upload of getUploadEntriesForSync()) {
@@ -306,50 +283,15 @@ function collectGitHubSyncFiles(baseDir: string): SyncFileEntry[] {
 	return files;
 }
 
-function collectStructuredSyncEntries(
-	baseDir: string,
-	baseName: "website" | "nav",
-	value: unknown,
-): SyncFileEntry[] {
-	const fileNames =
-		baseName === "website" ? WEBSITE_SYNC_EXPORT_FILES : NAV_SYNC_EXPORT_FILES;
-	const entries: SyncFileEntry[] = [];
-	for (const fileName of fileNames) {
-		const serialized =
-			fileName.endsWith(".json")
-				? JSON.stringify(value, null, 2)
-				: stringifyStructuredContent(value, `${baseName}.yaml`);
-		entries.push({
-			path: `${baseDir}/${fileName}`,
-			data: Buffer.from(serialized, "utf8"),
-		});
-	}
-	return entries;
-}
-
-function pruneLegacySyncFiles(keepFile: string) {
-	for (const file of listStructuredDataFileCandidates("sync")) {
-		if (file === keepFile || !fs.existsSync(file)) continue;
-		try {
-			fs.unlinkSync(file);
-		} catch {
-			// 不支持删除旧文件的挂载卷上，保留旧文件不影响正常使用。
-		}
-	}
-}
-
 export function readDataSyncConfig(): DataSyncConfig {
-	const file = resolveSyncFilePathForRead();
-	const raw = readJsonOr<Partial<DataSyncConfig>>(file, cloneDefaultConfig());
+	const raw = readJsonOr<Partial<DataSyncConfig>>(SYNC_FILE, cloneDefaultConfig());
 	return normalizeConfig(raw);
 }
 
 export function writeDataSyncConfig(config: DataSyncConfig) {
-	const target = resolveSyncFilePathForWrite();
-	writeJsonAtomic(target, normalizeConfig(config));
-	pruneLegacySyncFiles(target);
+	writeJsonAtomic(SYNC_FILE, normalizeConfig(config));
 	try {
-		fs.chmodSync(target, 0o600);
+		fs.chmodSync(SYNC_FILE, 0o600);
 	} catch {
 		// 某些挂载卷不支持 chmod，同步功能不应因此整体不可用。
 	}
@@ -435,28 +377,12 @@ export async function runDataSync(
 ): Promise<DataSyncRunResult> {
 	const config = readDataSyncConfig();
 	const at = new Date().toISOString();
-	const onProgress = options.onProgress;
-	const logProgress = async (
-		level: DataSyncProgressEvent["level"],
-		message: string,
-	) => {
-		if (!onProgress) return;
-		await onProgress({
-			at: new Date().toISOString(),
-			level,
-			message,
-		});
-	};
 	let result: DataSyncRunResult;
 
 	try {
-		await logProgress(
-			"info",
-			`开始执行 ${providerLabel(provider)} ${actionLabel(action)}...`,
-		);
 		if (provider === "github") {
 			if (action === "push") {
-				const pushed = await pushToGitHub(config.github, logProgress);
+				const pushed = await pushToGitHub(config.github);
 				result = {
 					ok: true,
 					provider,
@@ -466,7 +392,7 @@ export async function runDataSync(
 					message: pushed.changed ? "推送成功" : "数据没有变化，无需推送",
 				};
 			} else {
-				const restored = await pullFromGitHub(config.github, logProgress);
+				const restored = await pullFromGitHub(config.github);
 				result = {
 					ok: true,
 					provider,
@@ -478,12 +404,10 @@ export async function runDataSync(
 				};
 			}
 		} else if (action === "push") {
-			await logProgress("info", "正在打包本地备份数据...");
 			const zip = createDataBackupZip();
 			if (zip.length > MAX_BACKUP_SIZE) {
 				throw new Error("备份文件过大，当前远端同步最大支持 20MB");
 			}
-			await logProgress("info", `备份打包完成，大小 ${formatBytes(zip.length)}。`);
 			const remote = await pushToWebDav(config.webdav, zip);
 			result = {
 				ok: true,
@@ -495,12 +419,10 @@ export async function runDataSync(
 				message: "推送成功",
 			};
 		} else {
-			await logProgress("info", "正在拉取远端 WebDAV 备份...");
 			const { remote, zip } = await pullFromWebDav(config.webdav, options.target);
 			if (zip.length > MAX_BACKUP_SIZE) {
 				throw new Error("远端备份文件过大，当前最大支持 20MB");
 			}
-			await logProgress("info", `拉取完成，大小 ${formatBytes(zip.length)}。`);
 			const restored = restoreDataBackupZip(zip);
 			result = {
 				ok: true,
@@ -513,7 +435,6 @@ export async function runDataSync(
 				message: "拉取并还原成功",
 			};
 		}
-		await logProgress("success", result.message);
 	} catch (e) {
 		result = {
 			ok: false,
@@ -522,24 +443,9 @@ export async function runDataSync(
 			at,
 			message: (e as Error).message,
 		};
-		await logProgress("error", result.message);
 	}
 
 	return result;
-}
-
-function providerLabel(provider: SyncProvider): string {
-	return provider === "github" ? "GitHub" : "WebDAV";
-}
-
-function actionLabel(action: SyncAction): string {
-	return action === "push" ? "推送" : "拉取";
-}
-
-function formatBytes(size: number): string {
-	if (size < 1024) return `${size} B`;
-	if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
-	return `${(size / (1024 * 1024)).toFixed(2)} MB`;
 }
 
 function parseGitHubRepo(input: string): GitHubRepoParts | null {
@@ -755,22 +661,8 @@ async function readGitHubFileBuffer(
 	branch: string,
 	token: string,
 ): Promise<Buffer> {
-	const maybe = await readGitHubOptionalFileBuffer(parts, filePath, branch, token);
-	if (!maybe) {
-		throw new Error(`GitHub 文件不存在：${filePath}`);
-	}
-	return maybe;
-}
-
-async function readGitHubOptionalFileBuffer(
-	parts: GitHubRepoParts,
-	filePath: string,
-	branch: string,
-	token: string,
-): Promise<Buffer | null> {
 	const content = await getGitHubPathContent(parts, filePath, branch, token);
-	if (!content) return null;
-	if (Array.isArray(content)) {
+	if (!content || Array.isArray(content)) {
 		throw new Error(`GitHub 路径不是文件：${filePath}`);
 	}
 	if (content.content && content.encoding === "base64") {
@@ -785,26 +677,6 @@ async function readGitHubOptionalFileBuffer(
 		throw new Error(`GitHub 文件不是 base64 blob：${filePath}`);
 	}
 	return Buffer.from(blob.content.replace(/\s/g, ""), "base64");
-}
-
-async function readGitHubFirstMatchedFile(
-	parts: GitHubRepoParts,
-	baseDir: string,
-	fileNames: readonly string[],
-	branch: string,
-	token: string,
-): Promise<{ path: string; data: Buffer }> {
-	for (const fileName of fileNames) {
-		const filePath = `${baseDir}/${fileName}`;
-		const fileData = await readGitHubOptionalFileBuffer(
-			parts,
-			filePath,
-			branch,
-			token,
-		);
-		if (fileData) return { path: filePath, data: fileData };
-	}
-	throw new Error(`GitHub 中未找到 ${fileNames.join(" / ")}`);
 }
 
 async function listGitHubDirectoryRecursive(
@@ -842,47 +714,25 @@ async function listGitHubDirectoryRecursive(
 	return files;
 }
 
-async function pushToGitHub(
-	config: GitHubSyncConfig,
-	log?: (
-		level: DataSyncProgressEvent["level"],
-		message: string,
-	) => Promise<void>,
-): Promise<GitHubPushResult> {
-	await log?.("info", "正在校验 GitHub 同步配置...");
+async function pushToGitHub(config: GitHubSyncConfig): Promise<GitHubPushResult> {
 	const parts = validateGitHubConfig(config);
 	const baseDir = normalizeRemotePath(
 		config.filePath,
 		DEFAULT_SYNC_CONFIG.github.filePath,
 	);
-	await log?.(
-		"info",
-		`目标仓库 ${parts.owner}/${parts.repo}，分支 ${config.branch}，目录 ${baseDir}`,
-	);
 	const files = collectGitHubSyncFiles(baseDir);
 	if (files.length === 0) {
 		throw new Error("没有可同步到 GitHub 的数据文件");
 	}
-	await log?.("info", `已准备 ${files.length} 个文件，开始同步...`);
 
-	await log?.("info", "正在读取远端分支基线...");
 	const pushBase = await resolveGitHubPushBase(parts, config);
 	if (pushBase.parentCommitSha && !pushBase.parentTreeSha) {
 		throw new Error("无法获取 GitHub 基线树信息，请稍后重试");
-	}
-	if (pushBase.createRef) {
-		await log?.("info", "目标分支不存在，将在提交后自动创建分支。");
-	} else {
-		await log?.("info", "已获取目标分支基线，继续增量构建提交。");
 	}
 
 	const desiredPaths = new Set(files.map((file) => file.path));
 	let stalePaths: string[] = [];
 	if (pushBase.sourceBranch) {
-		await log?.(
-			"info",
-			`正在扫描远端目录旧文件（分支 ${pushBase.sourceBranch}）...`,
-		);
 		const existingFiles = await listGitHubDirectoryRecursive(
 			parts,
 			baseDir,
@@ -892,9 +742,6 @@ async function pushToGitHub(
 		stalePaths = existingFiles
 			.map((entry) => entry.path || "")
 			.filter((p) => p && !desiredPaths.has(p));
-		if (stalePaths.length > 0) {
-			await log?.("info", `发现 ${stalePaths.length} 个远端冗余文件，稍后将删除。`);
-		}
 	}
 
 	const apiBase = `https://api.github.com/repos/${parts.owner}/${parts.repo}`;
@@ -905,12 +752,7 @@ async function pushToGitHub(
 		sha: string | null;
 	}> = [];
 
-	for (let i = 0; i < files.length; i++) {
-		const file = files[i];
-		await log?.(
-			"info",
-			`上传文件 ${i + 1}/${files.length}: ${file.path} (${formatBytes(file.data.length)})`,
-		);
+	for (const file of files) {
 		const blob = await githubFetch<GitHubCreateBlobResponse>(
 			`${apiBase}/git/blobs`,
 			config.token,
@@ -930,7 +772,6 @@ async function pushToGitHub(
 			sha: blob.sha,
 		});
 	}
-	await log?.("info", "文件内容上传完成。");
 
 	for (const stalePath of stalePaths) {
 		tree.push({
@@ -941,7 +782,6 @@ async function pushToGitHub(
 		});
 	}
 
-	await log?.("info", "正在创建 Git tree...");
 	const newTree = await githubFetch<GitHubCreateTreeResponse>(
 		`${apiBase}/git/trees`,
 		config.token,
@@ -955,13 +795,11 @@ async function pushToGitHub(
 		},
 	);
 
-	const remote = `github:${parts.owner}/${parts.repo}@${config.branch}:${baseDir}/(website.yaml,website.json,nav.yaml,nav.json,uploads/*)`;
+	const remote = `github:${parts.owner}/${parts.repo}@${config.branch}:${baseDir}/(website.json,nav.json,uploads/*)`;
 	if (pushBase.parentTreeSha && newTree.sha === pushBase.parentTreeSha) {
-		await log?.("success", "远端数据与本地一致，无需生成新提交。");
 		return { remote, changed: false };
 	}
 
-	await log?.("info", "正在创建 Git commit...");
 	const commit = await githubFetch<GitHubCreateCommitResponse>(
 		`${apiBase}/git/commits`,
 		config.token,
@@ -977,69 +815,51 @@ async function pushToGitHub(
 	);
 
 	if (pushBase.createRef) {
-		await log?.("info", `正在创建分支 heads/${config.branch}...`);
 		await createGitHubRef(parts, `heads/${config.branch}`, commit.sha, config.token);
 	} else {
-		await log?.("info", `正在更新分支 heads/${config.branch}...`);
 		await updateGitHubRef(parts, `heads/${config.branch}`, commit.sha, config.token);
 	}
-	await log?.("success", `推送完成，提交 SHA: ${commit.sha.slice(0, 8)}`);
 
 	return { remote, changed: true };
 }
 
 async function pullFromGitHub(
 	config: GitHubSyncConfig,
-	log?: (
-		level: DataSyncProgressEvent["level"],
-		message: string,
-	) => Promise<void>,
 ): Promise<{ remote: string; result: BackupRestoreResult }> {
 	const parts = validateGitHubConfig(config);
 	const baseDir = normalizeRemotePath(config.filePath, DEFAULT_SYNC_CONFIG.github.filePath);
+	const websitePath = `${baseDir}/website.json`;
+	const navPath = `${baseDir}/nav.json`;
 	const uploadsDirPath = `${baseDir}/uploads`;
-	await log?.(
-		"info",
-		`开始从 ${parts.owner}/${parts.repo}@${config.branch} 拉取 ${baseDir} 目录...`,
-	);
 
-	const websiteFile = await readGitHubFirstMatchedFile(
+	const websiteBuf = await readGitHubFileBuffer(
 		parts,
-		baseDir,
-		WEBSITE_SYNC_IMPORT_FILES,
+		websitePath,
 		config.branch,
 		config.token,
 	);
-	const navFile = await readGitHubFirstMatchedFile(
+	const navBuf = await readGitHubFileBuffer(
 		parts,
-		baseDir,
-		NAV_SYNC_IMPORT_FILES,
+		navPath,
 		config.branch,
 		config.token,
-	);
-	await log?.(
-		"info",
-		`已下载 ${path.basename(websiteFile.path)} 和 ${path.basename(navFile.path)}。`,
 	);
 
 	let websiteData: WebsiteData;
 	let navData: NavConfig;
 	try {
-		websiteData = parseStructuredContent<WebsiteData>(
-			websiteFile.data.toString("utf8"),
-		);
+		websiteData = JSON.parse(websiteBuf.toString("utf8")) as WebsiteData;
 	} catch {
-		throw new Error(`GitHub 的 ${path.basename(websiteFile.path)} 解析失败`);
+		throw new Error("GitHub 的 website.json 解析失败");
 	}
 	try {
-		navData = parseStructuredContent<NavConfig>(navFile.data.toString("utf8"));
+		navData = JSON.parse(navBuf.toString("utf8")) as NavConfig;
 	} catch {
-		throw new Error(`GitHub 的 ${path.basename(navFile.path)} 解析失败`);
+		throw new Error("GitHub 的 nav.json 解析失败");
 	}
 
 	writeWebsiteData(websiteData);
 	writeNav(navData);
-	await log?.("info", "本地配置已更新。");
 
 	const uploadEntries = await listGitHubDirectoryRecursive(
 		parts,
@@ -1050,7 +870,6 @@ async function pullFromGitHub(
 
 	let uploadsCount = 0;
 	if (uploadEntries.length > 0) {
-		await log?.("info", `发现 ${uploadEntries.length} 个远端上传文件，正在写入本地...`);
 		fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 		for (const entry of uploadEntries) {
 			if (!entry.path) continue;
@@ -1067,7 +886,6 @@ async function pullFromGitHub(
 			uploadsCount += 1;
 		}
 	}
-	await log?.("success", `GitHub 拉取完成，恢复上传文件 ${uploadsCount} 个。`);
 
 	return {
 		remote: `github:${parts.owner}/${parts.repo}@${config.branch}:${baseDir}`,

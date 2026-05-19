@@ -31,7 +31,6 @@ export const DEFAULT_LAYOUT: Required<LayoutConfig> = {
 	defaultIconPadding: "",
 	linkTarget: "new",
 	autoUseIntranet: false,
-	enableSiteDetailPage: false,
 };
 
 const EMPTY_WEBSITE: WebsiteData = { categories: [] };

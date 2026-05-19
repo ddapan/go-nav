@@ -3,19 +3,9 @@ set -eu
 
 DATA_DIR="${DATA_DIR:-/app/data}"
 DEFAULT_DATA_DIR="/app/default-data"
-DATA_FILE_FORMAT="${DATA_FILE_FORMAT:-json}"
 SESSION_SECRET_FILE="$DATA_DIR/.session-secret"
 RUNTIME_USER="nextjs"
 RUNTIME_GROUP="nodejs"
-
-normalize_data_ext() {
-	case "$(echo "$DATA_FILE_FORMAT" | tr '[:upper:]' '[:lower:]')" in
-		yaml|yml) echo "yaml" ;;
-		*) echo "json" ;;
-	esac
-}
-
-TARGET_DATA_EXT="$(normalize_data_ext)"
 
 log() {
 	printf '%s %s\n' "$(date '+%Y-%m-%dT%H:%M:%S%z')" "go-nav: $*"
@@ -26,44 +16,15 @@ log "data directory: $DATA_DIR"
 
 mkdir -p "$DATA_DIR/uploads"
 
-has_local_config_file() {
-	base="$1"
-	[ -f "$DATA_DIR/$base.yaml" ] || [ -f "$DATA_DIR/$base.yml" ] || [ -f "$DATA_DIR/$base.json" ]
-}
+if [ -f "$DEFAULT_DATA_DIR/nav.json" ] && [ ! -f "$DATA_DIR/nav.json" ]; then
+	cp "$DEFAULT_DATA_DIR/nav.json" "$DATA_DIR/nav.json"
+	log "initialized nav.json"
+fi
 
-find_default_config_file() {
-	base="$1"
-	if [ "$TARGET_DATA_EXT" = "yaml" ]; then
-		candidates="yaml yml json"
-	else
-		candidates="json yaml yml"
-	fi
-	for ext in $candidates; do
-		file="$DEFAULT_DATA_DIR/$base.$ext"
-		if [ -f "$file" ]; then
-			echo "$file"
-			return 0
-		fi
-	done
-	return 1
-}
-
-init_config_file() {
-	base="$1"
-	if has_local_config_file "$base"; then
-		return 0
-	fi
-	default_file="$(find_default_config_file "$base" || true)"
-	if [ -z "$default_file" ]; then
-		return 0
-	fi
-	target="$DATA_DIR/$base.$TARGET_DATA_EXT"
-	cp "$default_file" "$target"
-	log "initialized $(basename "$target")"
-}
-
-init_config_file "nav"
-init_config_file "website"
+if [ -f "$DEFAULT_DATA_DIR/website.json" ] && [ ! -f "$DATA_DIR/website.json" ]; then
+	cp "$DEFAULT_DATA_DIR/website.json" "$DATA_DIR/website.json"
+	log "initialized website.json"
+fi
 
 if [ -d "$DEFAULT_DATA_DIR/uploads" ] && [ -z "$(find "$DATA_DIR/uploads" -mindepth 1 ! -name .gitkeep -print -quit)" ]; then
 	cp -R "$DEFAULT_DATA_DIR/uploads/." "$DATA_DIR/uploads/"

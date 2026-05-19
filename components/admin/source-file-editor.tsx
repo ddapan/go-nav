@@ -5,14 +5,13 @@ import { Button, TextArea, toast } from "@heroui/react";
 import { useSetAtom } from "jotai";
 import { BiSave } from "react-icons/bi";
 import { syncDataWithoutDirtyAtom } from "@/lib/store/admin";
+import type { WebsiteData } from "@/types";
 
 export function SourceFileEditor() {
 	const [content, setContent] = useState("");
 	const [originalContent, setOriginalContent] = useState("");
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
-	const [fileName, setFileName] = useState("website.json");
-	const [formatLabel, setFormatLabel] = useState("JSON");
 	const syncData = useSetAtom(syncDataWithoutDirtyAtom);
 
 	const loadContent = useCallback(async () => {
@@ -25,11 +24,9 @@ export function SourceFileEditor() {
 				return;
 			}
 			const data = await res.json();
-			const text = typeof data.content === "string" ? data.content : "";
-			setContent(text);
-			setOriginalContent(text);
-			setFileName(typeof data.fileName === "string" ? data.fileName : "website.json");
-			setFormatLabel(data.format === "yaml" ? "YAML" : "JSON");
+			const formatted = JSON.stringify(JSON.parse(data.content), null, 2);
+			setContent(formatted);
+			setOriginalContent(formatted);
 		} catch {
 			toast.danger("加载文件失败");
 		} finally {
@@ -44,6 +41,13 @@ export function SourceFileEditor() {
 	const isDirty = content !== originalContent;
 
 	const handleSave = useCallback(async () => {
+		let parsed: WebsiteData;
+		try {
+			parsed = JSON.parse(content);
+		} catch (e) {
+			toast.danger(`JSON 格式错误：${(e as Error).message}`);
+			return;
+		}
 		setSaving(true);
 		try {
 			const res = await fetch("/api/source-file", {
@@ -56,21 +60,15 @@ export function SourceFileEditor() {
 				toast.danger(data.error || "保存失败");
 				return;
 			}
-			const nextContent = typeof data.content === "string" ? data.content : content;
-			setContent(nextContent);
-			setOriginalContent(nextContent);
-			setFileName(typeof data.fileName === "string" ? data.fileName : fileName);
-			setFormatLabel(data.format === "yaml" ? "YAML" : "JSON");
-			if (data.websiteData) {
-				syncData({ websiteData: data.websiteData });
-			}
+			setOriginalContent(content);
+			syncData({ websiteData: parsed });
 			toast.success("已保存");
 		} catch {
 			toast.danger("保存失败");
 		} finally {
 			setSaving(false);
 		}
-	}, [content, fileName, syncData]);
+	}, [content, syncData]);
 
 	useEffect(() => {
 		const handler = async (e: KeyboardEvent) => {
@@ -97,10 +95,10 @@ export function SourceFileEditor() {
 			<div className="flex items-center justify-between">
 				<div>
 					<h3 className="text-sm font-semibold text-gray-900 dark:text-neutral-100">
-						编辑 {fileName}
+						编辑 website.json
 					</h3>
 					<p className="mt-1 text-xs text-gray-500 dark:text-neutral-400">
-						直接编辑源文件内容，保存时会验证 JSON / YAML 格式（当前输出：{formatLabel}）
+						直接编辑源文件内容，保存时会验证 JSON 格式
 					</p>
 				</div>
 				<Button
