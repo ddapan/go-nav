@@ -166,7 +166,7 @@ export function BackupEditor() {
 					</h3>
 					<p className="text-xs text-gray-500 dark:text-neutral-400">
 						上传之前导出的备份 zip 压缩包，将直接覆盖
-						data/website.json、data/nav.json 与 data/uploads
+						data/website.*、data/nav.* 与 data/uploads
 						目录下的对应文件
 					</p>
 				</div>

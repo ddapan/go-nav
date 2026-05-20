@@ -11,6 +11,13 @@ function createTimeoutSignal(ms: number) {
 	};
 }
 
+function extractPrimaryTitle(rawTitle: string): string {
+	const normalized = rawTitle.replace(/\s+/g, " ").trim();
+	if (!normalized) return "";
+	const [primary] = normalized.split(/\s*(?:——|—|｜|\||_|-|（|\(|，|,)\s*/);
+	return primary?.trim() || normalized;
+}
+
 /**
  * 获取网站 HTML 并解析 title、favicon 等信息。
  * POST /api/fetch-website
@@ -57,7 +64,8 @@ export async function POST(req: Request) {
 		const titleMatch = html.match(
 			/<title[^>]*>([^<]+)<\/title>/i,
 		);
-		const title = titleMatch?.[1]?.trim() || "";
+		const rawTitle = titleMatch?.[1]?.trim() || "";
+		const title = extractPrimaryTitle(rawTitle);
 
 		const faviconUrl = extractFaviconUrl(html, targetUrl);
 

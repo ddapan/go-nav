@@ -61,7 +61,12 @@ interface BatchSiteRow {
 type SitePatch = Partial<
 	Pick<
 		NavSite,
-		"title" | "description" | "icon" | "previewImage" | "bgColor" | "iconPadding"
+		| "title"
+		| "description"
+		| "icon"
+		| "previewImage"
+		| "bgColor"
+		| "iconPadding"
 	>
 >;
 
@@ -95,6 +100,10 @@ const TABLE_MIN_WIDTH = Object.values(TABLE_COLUMN_WIDTHS).reduce(
 	(total, width) => total + width,
 	0,
 );
+
+const DEFAULT_BATCH_CONCURRENCY = 3;
+const MIN_BATCH_CONCURRENCY = 1;
+const MAX_BATCH_CONCURRENCY = 20;
 
 function normalizeUpdateFields(values: string[]) {
 	return UPDATE_FIELD_OPTIONS.filter((option) =>
@@ -193,10 +202,10 @@ async function fetchWebsitePatch(
 	);
 	let data:
 		| {
-			title?: string;
-			faviconUrl?: string | null;
-			description?: string;
-		}
+				title?: string;
+				faviconUrl?: string | null;
+				description?: string;
+		  }
 		| undefined;
 	if (needsSiteMeta) {
 		const res = await fetch("/api/fetch-website", {
@@ -286,6 +295,14 @@ function isAbortError(error: unknown) {
 	);
 }
 
+function clampConcurrency(value: number) {
+	if (!Number.isFinite(value)) return DEFAULT_BATCH_CONCURRENCY;
+	return Math.min(
+		MAX_BATCH_CONCURRENCY,
+		Math.max(MIN_BATCH_CONCURRENCY, Math.floor(value)),
+	);
+}
+
 export function BatchOperationsEditor() {
 	const [categories, setCategories] = useAtom(categoriesAtom);
 	const allRows = useMemo(() => collectSiteRows(categories), [categories]);
@@ -306,6 +323,9 @@ export function BatchOperationsEditor() {
 	const [selectedFields, setSelectedFields] = useState<string[]>(
 		DEFAULT_UPDATE_FIELDS,
 	);
+	const [concurrencyInput, setConcurrencyInput] = useState(
+		String(DEFAULT_BATCH_CONCURRENCY),
+	);
 	const [isClientReady, setIsClientReady] = useState(false);
 	const [activeRow, setActiveRow] = useState<BatchSiteRow | null>(null);
 	const categoriesRef = useRef(categories);
@@ -315,11 +335,15 @@ export function BatchOperationsEditor() {
 	const statsRef = useRef<BatchStats>(EMPTY_STATS);
 	const pauseRequestedRef = useRef(false);
 	const runningRef = useRef(false);
-	const requestAbortRef = useRef<AbortController | null>(null);
+	const requestAbortMapRef = useRef<Map<string, AbortController>>(new Map());
 	const sourceSignatureRef = useRef(allRowsSignature);
 	const selectedUpdateFields = useMemo(
 		() => normalizeUpdateFields(selectedFields),
 		[selectedFields],
+	);
+	const concurrency = useMemo(
+		() => clampConcurrency(Number.parseInt(concurrencyInput, 10)),
+		[concurrencyInput],
 	);
 
 	useEffect(() => {
@@ -464,57 +488,80 @@ export function BatchOperationsEditor() {
 				resetProgress();
 			}
 
-			for (const row of queueRowsRef.current) {
-				if (pauseRequestedRef.current) break;
-				const currentRowStatus =
-					rowStatusRef.current[row.statusKey] ?? "pending";
-				if (currentRowStatus === "success" || currentRowStatus === "failure") {
-					continue;
-				}
+			const rows = queueRowsRef.current;
+			let cursor = 0;
 
-				setActiveRow(row);
-				setRowStatus(row.statusKey, "running");
-				const requestAbort = new AbortController();
-				requestAbortRef.current = requestAbort;
-
-				try {
-					const { patch } = await fetchWebsitePatch(
-						row.url,
-						selectedUpdateFields,
-						requestAbort.signal,
-					);
-					const patched = applyPatch(row, patch);
-					if (!patched) {
-						throw new Error("网址位置已变化");
+			const consumeNextRow = () => {
+				while (cursor < rows.length) {
+					const row = rows[cursor];
+					cursor += 1;
+					const currentRowStatus =
+						rowStatusRef.current[row.statusKey] ?? "pending";
+					if (
+						currentRowStatus === "success" ||
+						currentRowStatus === "failure"
+					) {
+						continue;
 					}
-					statsRef.current = {
-						processed: statsRef.current.processed + 1,
-						success: statsRef.current.success + 1,
-						failure: statsRef.current.failure,
-					};
-					setRowError(row.statusKey, null);
-					setRowStatus(row.statusKey, "success");
-				} catch (e) {
-					if (pauseRequestedRef.current && isAbortError(e)) {
+					return row;
+				}
+				return null;
+			};
+
+			const markStats = (next: BatchStats) => {
+				statsRef.current = next;
+				setStats(next);
+			};
+
+			const worker = async () => {
+				while (!pauseRequestedRef.current) {
+					const row = consumeNextRow();
+					if (!row) return;
+
+					setActiveRow(row);
+					setRowStatus(row.statusKey, "running");
+					const requestAbort = new AbortController();
+					requestAbortMapRef.current.set(row.statusKey, requestAbort);
+
+					try {
+						const { patch } = await fetchWebsitePatch(
+							row.url,
+							selectedUpdateFields,
+							requestAbort.signal,
+						);
+						const patched = applyPatch(row, patch);
+						if (!patched) {
+							throw new Error("网址位置已变化");
+						}
+						markStats({
+							processed: statsRef.current.processed + 1,
+							success: statsRef.current.success + 1,
+							failure: statsRef.current.failure,
+						});
 						setRowError(row.statusKey, null);
-						setRowStatus(row.statusKey, "pending");
-						break;
-					}
-					const message = e instanceof Error ? e.message : "获取失败";
-					statsRef.current = {
-						processed: statsRef.current.processed + 1,
-						success: statsRef.current.success,
-						failure: statsRef.current.failure + 1,
-					};
-					setRowError(row.statusKey, message);
-					setRowStatus(row.statusKey, "failure");
-				} finally {
-					if (requestAbortRef.current === requestAbort) {
-						requestAbortRef.current = null;
+						setRowStatus(row.statusKey, "success");
+					} catch (e) {
+						if (pauseRequestedRef.current && isAbortError(e)) {
+							setRowError(row.statusKey, null);
+							setRowStatus(row.statusKey, "pending");
+							return;
+						}
+						const message = e instanceof Error ? e.message : "获取失败";
+						markStats({
+							processed: statsRef.current.processed + 1,
+							success: statsRef.current.success,
+							failure: statsRef.current.failure + 1,
+						});
+						setRowError(row.statusKey, message);
+						setRowStatus(row.statusKey, "failure");
+					} finally {
+						requestAbortMapRef.current.delete(row.statusKey);
 					}
 				}
-				setStats(statsRef.current);
-			}
+			};
+
+			const workerCount = Math.min(concurrency, rows.length);
+			await Promise.all(Array.from({ length: workerCount }, () => worker()));
 
 			runningRef.current = false;
 			setActiveRow(null);
@@ -529,6 +576,7 @@ export function BatchOperationsEditor() {
 		},
 		[
 			applyPatch,
+			concurrency,
 			resetProgress,
 			selectedUpdateFields,
 			setRowError,
@@ -539,8 +587,10 @@ export function BatchOperationsEditor() {
 	const pauseBatch = () => {
 		if (!runningRef.current) return;
 		pauseRequestedRef.current = true;
-		requestAbortRef.current?.abort();
-		requestAbortRef.current = null;
+		for (const controller of requestAbortMapRef.current.values()) {
+			controller.abort();
+		}
+		requestAbortMapRef.current.clear();
 		setStatus("pausing");
 	};
 
@@ -636,7 +686,22 @@ export function BatchOperationsEditor() {
 							失败 {stats.failure}
 						</Chip>
 					</div>
-					<div className="flex flex-wrap items-center gap-2">
+					<div className="flex flex-wrap items-center gap-2 pl-1">
+						<TextField
+							className="w-28 flex flex-row items-center"
+							value={concurrencyInput}
+							onChange={setConcurrencyInput}
+							isDisabled={isRunning}
+						>
+							<Label className="text-default-500">并发：</Label>
+							<InputGroup className={"flex-1"}>
+								<InputGroup.Input
+									type="number"
+									min={MIN_BATCH_CONCURRENCY}
+									max={MAX_BATCH_CONCURRENCY}
+								/>
+							</InputGroup>
+						</TextField>
 						{isRunning ? (
 							<Button
 								variant="outline"
@@ -686,8 +751,8 @@ export function BatchOperationsEditor() {
 					</div>
 				</div>
 
-				<div className="flex items-center gap-3">
-					<span className="shrink-0 text-xs text-default-500">进度</span>
+				<div className="flex items-center gap-3 px-1">
+					<span className="shrink-0 font-medium text-default-500">进度</span>
 					<ProgressBar
 						aria-label="批量更新进度"
 						className="min-w-0 flex-1"

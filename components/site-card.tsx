@@ -17,6 +17,7 @@ import {
 	subscribeSiteLinkMode,
 	type SiteLinkMode,
 } from "@/lib/client/site-link";
+import { buildSiteDetailPath } from "@/lib/site-detail";
 import { SiteIcon } from "./site-icon";
 export {
 	isTransparentColor,
@@ -47,15 +48,23 @@ export const SiteCard = memo(function SiteCard({
 	layout?: Required<LayoutConfig>;
 }) {
 	const [siteLinkMode, setSiteLinkMode] = useState<SiteLinkMode>("public");
-	const target = layout?.linkTarget === "current" ? undefined : "_blank";
+	const detailHref = useMemo(() => buildSiteDetailPath(site), [site]);
+	const useDetailPage = layout?.enableSiteDetailPage === true;
+	const target =
+		useDetailPage || layout?.linkTarget === "current" ? undefined : "_blank";
 	const rel = target ? "noopener noreferrer" : undefined;
 	const preferredHref = useMemo(
 		() =>
-			getPreferredSiteHref(site, {
-				autoUseIntranet: layout?.autoUseIntranet,
-			}, siteLinkMode),
+			getPreferredSiteHref(
+				site,
+				{
+					autoUseIntranet: layout?.autoUseIntranet,
+				},
+				siteLinkMode,
+			),
 		[layout?.autoUseIntranet, site, siteLinkMode],
 	);
+	const href = useDetailPage ? detailHref : preferredHref;
 
 	useEffect(() => {
 		setSiteLinkMode(getStoredSiteLinkMode());
@@ -66,6 +75,7 @@ export const SiteCard = memo(function SiteCard({
 
 	const handleClick = useCallback(
 		(event: MouseEvent<HTMLAnchorElement>) => {
+			if (useDetailPage) return;
 			const isModifiedClick =
 				event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;
 			if (isModifiedClick) {
@@ -82,10 +92,11 @@ export const SiteCard = memo(function SiteCard({
 				autoUseIntranet: layout?.autoUseIntranet,
 			});
 		},
-		[layout?.autoUseIntranet, layout?.linkTarget, site, trackVisit],
+		[layout?.autoUseIntranet, layout?.linkTarget, site, trackVisit, useDetailPage],
 	);
 	const handleAuxClick = useCallback(
 		(event: MouseEvent<HTMLAnchorElement>) => {
+			if (useDetailPage) return;
 			if (event.button !== 1) return;
 			event.preventDefault();
 			if (trackVisit) {
@@ -100,13 +111,13 @@ export const SiteCard = memo(function SiteCard({
 				{ forceNewTab: true },
 			);
 		},
-		[layout?.autoUseIntranet, layout?.linkTarget, site, trackVisit],
+		[layout?.autoUseIntranet, layout?.linkTarget, site, trackVisit, useDetailPage],
 	);
 
 	if (layout?.cardStyle === "preview") {
 		return (
 			<a
-				href={preferredHref}
+				href={href}
 				target={target}
 				rel={rel}
 				aria-label={site.title}
@@ -141,13 +152,7 @@ export const SiteCard = memo(function SiteCard({
 							className="origin-center -rotate-8 object-cover overflow-hidden rounded-md border border-solid transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] [@media(hover:hover)]:group-hover:-translate-y-1 [@media(hover:hover)]:group-hover:-rotate-1"
 						/>
 					) : (
-						<SiteIcon
-							site={site as NavSite}
-							layout={layout}
-							size={Number(layout?.cardHeight) || 80}
-							className="origin-center -rotate-8 object-cover overflow-hidden rounded-md transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] [@media(hover:hover)]:group-hover:-translate-y-1 [@media(hover:hover)]:group-hover:-rotate-1"
-							showDefaultBackgroundColor={false}
-						/>
+						<div className="h-full w-full bg-default/60 origin-center -rotate-8 overflow-hidden rounded-md border border-solid transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] [@media(hover:hover)]:group-hover:-translate-y-1 [@media(hover:hover)]:group-hover:-rotate-1"></div>
 					)}
 				</div>
 			</a>
@@ -156,7 +161,7 @@ export const SiteCard = memo(function SiteCard({
 
 	return (
 		<a
-			href={preferredHref}
+			href={href}
 			target={target}
 			rel={rel}
 			aria-label={site.title}

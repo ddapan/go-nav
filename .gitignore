@@ -52,3 +52,5 @@ next-env.d.ts
 /go-nav-data/
 /data/.session-secret
 /data/sync.json
+/data/sync.yaml
+/data/sync.yml

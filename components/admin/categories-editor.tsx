@@ -220,7 +220,12 @@ const SortableCategoryRow = memo(function SortableCategoryRow({
 		if (iconSrc) {
 			return (
 				// eslint-disable-next-line @next/next/no-img-element
-				<img src={iconSrc} alt="" className="h-5 w-5 rounded object-contain" />
+				<img
+					src={iconSrc}
+					alt=""
+					className="h-5 w-5 rounded object-contain"
+					loading="lazy"
+				/>
 			);
 		}
 		return <span className="w-5 text-center text-lg">{icon}</span>;

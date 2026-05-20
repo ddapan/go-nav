@@ -7,7 +7,7 @@
  * 中的全部图片复制到 public/uploads/，让 Next.js 作为静态资源一起打包到 out/。
  *
  * 约定：
- *  - 所有上传文件在 nav.json / website.json 中形如 `/uploads/xxx.png`
+ *  - 所有上传文件在 nav.* / website.* 中形如 `/uploads/xxx.png`
  *  - server 模式：由 app/uploads/[...path]/route.server.ts 代理 data/uploads
  *  - static 模式：由 public/uploads/ 直接托管（本脚本生成）
  */

@@ -59,6 +59,8 @@ export interface LayoutConfig {
 	linkTarget?: "current" | "new";
 	/** 是否自动优先访问内网地址（可达时优先） */
 	autoUseIntranet?: boolean;
+	/** 点击网站卡片时是否先进入“网址详情页” */
+	enableSiteDetailPage?: boolean;
 }
 
 /**
