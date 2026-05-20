@@ -56,7 +56,7 @@
     "showFloatingActions": true,
     "defaultIconPadding": "8",
     "linkTarget": "new",
-    "cardStyle": "preview",
+    "cardStyle": "compact",
     "enableSiteDetailPage": false
   },
   "adsAspectRatio": "4/3",
