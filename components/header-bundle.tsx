@@ -96,6 +96,32 @@ function MobileNavDrawerHost({
 	title: string;
 	logo: string;
 }) {
+	if (!open) return null;
+
+	return (
+		<MobileNavDrawerContent
+			open={open}
+			onOpenChange={onOpenChange}
+			onItemClick={onItemClick}
+			title={title}
+			logo={logo}
+		/>
+	);
+}
+
+function MobileNavDrawerContent({
+	open,
+	onOpenChange,
+	onItemClick,
+	title,
+	logo,
+}: {
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
+	onItemClick: (id: string) => void;
+	title: string;
+	logo: string;
+}) {
 	const categories = useAtomValue(categoriesAtom);
 
 	return (

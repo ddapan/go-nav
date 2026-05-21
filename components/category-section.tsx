@@ -1,10 +1,11 @@
 "use client";
 
 import {
-    memo,
-    useEffect,
-    useMemo,
-    useRef
+	memo,
+	useEffect,
+	useMemo,
+	useRef,
+	useState
 } from "react";
 import { Tabs } from "@heroui/react";
 import type { LayoutConfig, NavCategory } from "@/types";
@@ -19,6 +20,7 @@ export const CategorySection = memo(function CategorySection({
 	showCategoryTitle = true,
 	showCategoryDescription = true,
 	layout,
+	isChild = false,
 }: {
 	category: NavCategory;
 	cardMinWidth?: string;
@@ -27,9 +29,16 @@ export const CategorySection = memo(function CategorySection({
 	showCategoryTitle?: boolean;
 	showCategoryDescription?: boolean;
 	layout?: Required<LayoutConfig>;
+	isChild?: boolean;
 }) {
-	const hasChildren =
+	const hasMultipleChildren =
 		(category.children && category.children.length > 1);
+	const hasAnyChildren =
+		(category.children && category.children.length > 0);
+	const useTabs = layout?.showSubcategoryTabs !== false;
+
+	const shouldHideContent =
+		!useTabs && hasAnyChildren && !(category.sites && category.sites.length > 0);
 
 	return (
 		<section
@@ -38,9 +47,9 @@ export const CategorySection = memo(function CategorySection({
 			className="category-anchor scroll-mt-20"
 		>
 			{showCategoryTitle && (
-				<div className="mb-3 px-3 flex items-center gap-2 *:text-xl">
-					<IconView icon={category.icon} size={20} className="align-text-bottom" />
-					<h2 className="font-semibold text-nowrap">{category.name}</h2>
+				<div className={`px-3 flex items-center gap-2 ${isChild ? "text-sm" : "*:text-xl"} ${shouldHideContent ? "" : "mb-3"}`}>
+					<IconView icon={category.icon} size={isChild ? 16 : 20} className="align-text-bottom" />
+					<h2 className={`font-semibold text-nowrap ${isChild ? "text-lg" : ""}`}>{category.name}</h2>
 					{showCategoryDescription && category.description ? (
 						<span className="text-sm! font-medium text-muted truncate">
 							{category.description}
@@ -49,7 +58,7 @@ export const CategorySection = memo(function CategorySection({
 				</div>
 			)}
 
-			{hasChildren ? (
+			{hasMultipleChildren && useTabs ? (
 				<SubcategoryTabs
 					category={category}
 					cardMinWidth={cardMinWidth}
@@ -59,7 +68,7 @@ export const CategorySection = memo(function CategorySection({
 					showCategoryDescription={showCategoryDescription}
 					layout={layout}
 				/>
-			) : (
+			) : !shouldHideContent ? (
 				<CategoryContent
 					category={category}
 					cardMinWidth={cardMinWidth}
@@ -69,7 +78,7 @@ export const CategorySection = memo(function CategorySection({
 					showCategoryDescription={showCategoryDescription}
 					layout={layout}
 				/>
-			)}
+			) : null}
 		</section>
 	);
 });
@@ -139,6 +148,24 @@ function SubcategoryTabs({
 }) {
 	const tabs = useMemo(() => category.children ?? [], [category.children]);
 	const listRef = useRef<HTMLDivElement>(null);
+	const firstTabId = tabs[0]?.id ?? "";
+	const [selectedTabId, setSelectedTabId] = useState(firstTabId);
+	const [mountedTabIds, setMountedTabIds] = useState<Set<string>>(
+		() => new Set(firstTabId ? [firstTabId] : []),
+	);
+
+	useEffect(() => {
+		if (!firstTabId) return;
+		setSelectedTabId((current) =>
+			tabs.some((tab) => tab.id === current) ? current : firstTabId,
+		);
+		setMountedTabIds((current) => {
+			if (current.has(firstTabId)) return current;
+			const next = new Set(current);
+			next.add(firstTabId);
+			return next;
+		});
+	}, [firstTabId, tabs]);
 
 	useEffect(() => {
 		const el = listRef.current;
@@ -159,7 +186,20 @@ function SubcategoryTabs({
 	}, []);
 
 	return (
-		<Tabs className="w-full">
+		<Tabs
+			className="w-full"
+			selectedKey={selectedTabId}
+			onSelectionChange={(key) => {
+				const id = String(key);
+				setSelectedTabId(id);
+				setMountedTabIds((current) => {
+					if (current.has(id)) return current;
+					const next = new Set(current);
+					next.add(id);
+					return next;
+				});
+			}}
+		>
 			<Tabs.ListContainer
 				ref={listRef}
 				className="w-full overflow-x-auto px-2"
@@ -180,7 +220,7 @@ function SubcategoryTabs({
 				</Tabs.List>
 			</Tabs.ListContainer>
 
-			{tabs.map((t) => (
+			{tabs.filter((t) => mountedTabIds.has(t.id)).map((t) => (
 				<Tabs.Panel key={t.id} id={t.id} className="p-0">
 					{"sites" in t ? (
 						<SiteGrid
@@ -239,7 +279,7 @@ function SubcategoryContent({
 			{category.children?.map((child) => (
 				<div key={child.id} id={child.id} className="category-anchor space-y-3">
 					{showCategoryTitle && (
-						<h3 className="text-base font-semibold">
+						<h3 className="text-sm font-semibold">
 							{child.icon ? (
 								<span className="mr-1 inline-flex items-center" aria-hidden>
 									<IconView icon={child.icon} size={16} />

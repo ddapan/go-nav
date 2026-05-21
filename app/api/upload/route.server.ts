@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession } from "@/lib/server/auth";
-import { saveUpload } from "@/lib/server/store";
+import { saveImageAsset } from "@/lib/server/image-hosting";
 
 const MAX_UPLOAD_SIZE = 2 * 1024 * 1024;
 const ALLOWED_UPLOAD_TYPES = new Map([
@@ -32,7 +32,8 @@ function isAllowedUpload(type: string, name: string) {
 }
 
 /**
- * 上传文件到 data/uploads，返回 { url: "/uploads/xxx" }。
+ * 上传文件到当前配置的素材存储，返回 { url }。
+ * 默认存入 data/uploads；启用图床后会上传到远端并返回 /img/... 或完整 URL。
  * 鉴权。支持 multipart/form-data（字段名 file）。
  */
 export async function POST(req: Request) {
@@ -62,7 +63,9 @@ export async function POST(req: Request) {
 			);
 		}
 		const bytes = Buffer.from(await file.arrayBuffer());
-		const url = saveUpload(originalName, bytes);
+		const url = await saveImageAsset(originalName, bytes, {
+			contentType: file.type,
+		});
 		return NextResponse.json({ url });
 	} catch (e) {
 		return NextResponse.json({ error: (e as Error).message }, { status: 500 });

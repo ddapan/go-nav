@@ -11,17 +11,41 @@ export const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 let fileSecret: string | null | undefined;
 
+function readFileSecret(secretFile: string): string | null {
+	try {
+		const value = fs.readFileSync(secretFile, "utf-8").trim();
+		return value.length >= 32 ? value : null;
+	} catch {
+		return null;
+	}
+}
+
+function createPersistentSecret(secretFile: string): string {
+	const secret = crypto.randomBytes(32).toString("hex");
+	fs.mkdirSync(path.dirname(secretFile), { recursive: true });
+	try {
+		fs.writeFileSync(secretFile, `${secret}\n`, {
+			encoding: "utf-8",
+			flag: "wx",
+			mode: 0o600,
+		});
+	} catch (e) {
+		if ((e as NodeJS.ErrnoException).code === "EEXIST") {
+			const existing = readFileSecret(secretFile);
+			if (existing) return existing;
+		}
+		throw e;
+	}
+	return secret;
+}
+
 function getSecret(): string {
 	if (process.env.SESSION_SECRET) return process.env.SESSION_SECRET;
-	if (fileSecret !== undefined) return fileSecret || "dev-secret-change-me";
-	try {
-		fileSecret = fs
-			.readFileSync(path.join(DATA_DIR, ".session-secret"), "utf-8")
-			.trim();
-	} catch {
-		fileSecret = null;
-	}
-	return fileSecret || "dev-secret-change-me";
+	if (fileSecret !== undefined) return fileSecret ?? createPersistentSecret(path.join(DATA_DIR, ".session-secret"));
+	const secretFile = path.join(DATA_DIR, ".session-secret");
+	const secret = readFileSecret(secretFile) ?? createPersistentSecret(secretFile);
+	fileSecret = secret;
+	return secret;
 }
 
 function toBase64Url(buf: Buffer): string {

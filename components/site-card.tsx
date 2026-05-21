@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
 	memo,
 	useCallback,
@@ -12,11 +13,11 @@ import type { LayoutConfig, NavSite } from "@/types";
 import { recordVisit } from "@/hooks/use-recent-visits";
 import {
 	getPreferredSiteHref,
-	getStoredSiteLinkMode,
 	openSiteWithPreference,
-	subscribeSiteLinkMode,
 	type SiteLinkMode,
+	useSiteLinkMode,
 } from "@/lib/client/site-link";
+import { saveHomeSnapshot } from "@/lib/client/home-restore";
 import { buildSiteDetailPath } from "@/lib/site-detail";
 import { SiteIcon } from "./site-icon";
 export {
@@ -42,12 +43,13 @@ export const SiteCard = memo(function SiteCard({
 	site,
 	trackVisit = true,
 	layout,
+	siteLinkMode,
 }: {
 	site: SiteCardData;
 	trackVisit?: boolean;
 	layout?: Required<LayoutConfig>;
+	siteLinkMode: SiteLinkMode;
 }) {
-	const [siteLinkMode, setSiteLinkMode] = useState<SiteLinkMode>("public");
 	const detailHref = useMemo(() => buildSiteDetailPath(site), [site]);
 	const useDetailPage = layout?.enableSiteDetailPage === true;
 	const target =
@@ -65,13 +67,6 @@ export const SiteCard = memo(function SiteCard({
 		[layout?.autoUseIntranet, site, siteLinkMode],
 	);
 	const href = useDetailPage ? detailHref : preferredHref;
-
-	useEffect(() => {
-		setSiteLinkMode(getStoredSiteLinkMode());
-		return subscribeSiteLinkMode(() => {
-			setSiteLinkMode(getStoredSiteLinkMode());
-		});
-	}, []);
 
 	const handleClick = useCallback(
 		(event: MouseEvent<HTMLAnchorElement>) => {
@@ -92,7 +87,13 @@ export const SiteCard = memo(function SiteCard({
 				autoUseIntranet: layout?.autoUseIntranet,
 			});
 		},
-		[layout?.autoUseIntranet, layout?.linkTarget, site, trackVisit, useDetailPage],
+		[
+			layout?.autoUseIntranet,
+			layout?.linkTarget,
+			site,
+			trackVisit,
+			useDetailPage,
+		],
 	);
 	const handleAuxClick = useCallback(
 		(event: MouseEvent<HTMLAnchorElement>) => {
@@ -111,10 +112,89 @@ export const SiteCard = memo(function SiteCard({
 				{ forceNewTab: true },
 			);
 		},
-		[layout?.autoUseIntranet, layout?.linkTarget, site, trackVisit, useDetailPage],
+		[
+			layout?.autoUseIntranet,
+			layout?.linkTarget,
+			site,
+			trackVisit,
+			useDetailPage,
+		],
+	);
+	const handleDetailNavigate = useCallback(
+		(event: MouseEvent<HTMLAnchorElement>) => {
+			if (!useDetailPage) return;
+			if (event.defaultPrevented) return;
+			if (event.button !== 0) return;
+			if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+			const selected = document.querySelector<HTMLElement>(
+				"aside [role=option][data-selected=true]",
+			);
+			const fallbackFirst = document.querySelector<HTMLElement>(
+				"aside [role=option]",
+			);
+			saveHomeSnapshot({
+				scrollY: window.scrollY,
+				activeId: selected?.id || fallbackFirst?.id,
+			});
+		},
+		[useDetailPage],
 	);
 
 	if (layout?.cardStyle === "preview") {
+		if (useDetailPage) {
+			return (
+				<Link
+					href={detailHref}
+					scroll
+					onClick={handleDetailNavigate}
+					aria-label={site.title}
+					className="group relative flex gap-3 h-full transform-gpu flex-col overflow-hidden rounded-2xl border border-black/10 bg-white text-left shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary dark:border-white/10 dark:bg-zinc-900 [@media(hover:hover)]:hover:-translate-y-1 [@media(hover:hover)]:hover:border-black/15 [@media(hover:hover)]:hover:shadow-[0_18px_45px_rgba(15,23,42,0.12)] active:translate-y-0 active:scale-[0.99] dark:[@media(hover:hover)]:hover:border-white/20"
+				>
+					<div className="relative z-10 p-3">
+						<div className="truncate line-clamp-1 font-semibold tracking-[-0.02em] text-zinc-950 dark:text-zinc-50">
+							{site.title}
+						</div>
+						<div
+							className="leading-snug text-xs font-medium line-clamp-2 text-zinc-500 dark:text-zinc-400"
+							style={{
+								display: "-webkit-box",
+								WebkitLineClamp: 2,
+								WebkitBoxOrient: "vertical",
+								overflow: "hidden",
+							}}
+						>
+							{site.description}
+						</div>
+					</div>
+
+					<div className="absolute flex justify-center top-[50%] left-[15%] h-full w-full">
+						<div className="flex h-full w-full origin-center -rotate-8 overflow-hidden rounded-md border border-solid bg-linear-to-br from-zinc-100 to-zinc-300 dark:border-white/10 dark:from-zinc-800 dark:to-zinc-950 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] [@media(hover:hover)]:group-hover:-translate-y-1 [@media(hover:hover)]:group-hover:-rotate-1">
+							{site.previewImage ? (
+								// eslint-disable-next-line @next/next/no-img-element
+								<img
+									src={site.previewImage}
+									alt=""
+									loading="lazy"
+									className="object-cover"
+								/>
+							) : (
+								<>
+									{/* <SiteIcon
+										className="m-auto mb-[20%]"
+										site={site as NavSite}
+										layout={layout}
+										size={Number(layout.cardHeight) || 72}
+										initialClassName="text-sm!"
+										showDefaultBackgroundColor={false}
+									/> */}
+								</>
+							)}
+						</div>
+					</div>
+				</Link>
+			);
+		}
+
 		return (
 			<a
 				href={href}
@@ -143,19 +223,56 @@ export const SiteCard = memo(function SiteCard({
 				</div>
 
 				<div className="absolute flex justify-center top-[50%] left-[15%] h-full w-full">
-					{site.previewImage ? (
-						// eslint-disable-next-line @next/next/no-img-element
-						<img
-							src={site.previewImage}
-							alt=""
-							loading="lazy"
-							className="origin-center -rotate-8 object-cover overflow-hidden rounded-md border border-solid transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] [@media(hover:hover)]:group-hover:-translate-y-1 [@media(hover:hover)]:group-hover:-rotate-1"
-						/>
-					) : (
-						<div className="h-full w-full bg-default/60 origin-center -rotate-8 overflow-hidden rounded-md border border-solid transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] [@media(hover:hover)]:group-hover:-translate-y-1 [@media(hover:hover)]:group-hover:-rotate-1"></div>
-					)}
+					<div className="flex h-full w-full origin-center -rotate-8 overflow-hidden rounded-md border border-solid bg-linear-to-br from-zinc-100 to-zinc-300 dark:border-white/10 dark:from-zinc-800 dark:to-zinc-950 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] [@media(hover:hover)]:group-hover:-translate-y-1 [@media(hover:hover)]:group-hover:-rotate-1">
+						{site.previewImage ? (
+							// eslint-disable-next-line @next/next/no-img-element
+							<img
+								src={site.previewImage}
+								alt=""
+								loading="lazy"
+								className="object-cover"
+							/>
+						) : (
+							<>
+								{/* <SiteIcon
+									className="m-auto mb-[20%]"
+									site={site as NavSite}
+									layout={layout}
+									size={Number(layout.cardHeight) || 72}
+									initialClassName="text-sm!"
+									showDefaultBackgroundColor={false}
+								/> */}
+							</>
+						)}
+					</div>
 				</div>
 			</a>
+		);
+	}
+
+	if (useDetailPage) {
+		return (
+			<Link
+				href={detailHref}
+				scroll
+				onClick={handleDetailNavigate}
+				aria-label={site.title}
+				className="group flex transform-gpu items-center gap-3 rounded-xl bg-white p-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary dark:bg-zinc-800 [@media(hover:hover)]:hover:-translate-y-0.5 [@media(hover:hover)]:hover:bg-white [@media(hover:hover)]:hover:shadow-[0_12px_28px_rgba(15,23,42,0.11)] active:translate-y-0 active:scale-[0.99] dark:[@media(hover:hover)]:hover:bg-zinc-800"
+			>
+				<SiteIcon
+					site={site as NavSite}
+					layout={layout}
+					size={40}
+					className="text-lg! transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] [@media(hover:hover)]:group-hover:scale-105"
+					initialClassName="text-sm!"
+				/>
+				<div className="min-w-0 flex-1">
+					<div className="truncate text-sm font-medium">{site.title}</div>
+					<div className="mt-0.5 truncate text-xs text-muted">
+						{site.description}
+					</div>
+				</div>
+			</Link>
 		);
 	}
 
@@ -229,6 +346,7 @@ export const SiteGrid = memo(function SiteGrid({
 	trackVisit?: boolean;
 	layout?: Required<LayoutConfig>;
 }) {
+	const siteLinkMode = useSiteLinkMode();
 	const total = sites?.length ?? 0;
 	const needBatch = total > BATCH_THRESHOLD;
 	const [renderCount, setRenderCount] = useState(() =>
@@ -270,6 +388,7 @@ export const SiteGrid = memo(function SiteGrid({
 						site={s}
 						trackVisit={trackVisit}
 						layout={layout}
+						siteLinkMode={siteLinkMode}
 					/>
 				))}
 			</div>

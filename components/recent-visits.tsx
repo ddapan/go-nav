@@ -4,6 +4,7 @@ import { Button } from "@heroui/react";
 import { memo, useEffect, useRef, useState } from "react";
 import type { LayoutConfig } from "@/types";
 import { useRecentVisits } from "@/hooks/use-recent-visits";
+import { useSiteLinkMode } from "@/lib/client/site-link";
 import { SiteCard } from "./site-card";
 
 function parseCssSizeToPx(value: string, fallback = 16) {
@@ -38,6 +39,7 @@ export const RecentVisits = memo(function RecentVisits({
 	cardGridPadding = "8px",
 	sectionGap = "16px",
 	delay = 150,
+	disableEntranceAnimation = false,
 	layout,
 }: {
 	maxItems?: number;
@@ -46,13 +48,15 @@ export const RecentVisits = memo(function RecentVisits({
 	cardGridPadding?: string;
 	sectionGap?: string;
 	delay?: number;
+	disableEntranceAnimation?: boolean;
 	layout?: Required<LayoutConfig>;
 }) {
 	const { visits, clearVisits, mounted } = useRecentVisits();
+	const siteLinkMode = useSiteLinkMode();
 	const innerRef = useRef<HTMLDivElement>(null);
 	const gridRef = useRef<HTMLDivElement>(null);
 	const [height, setHeight] = useState("0px");
-	const [visible, setVisible] = useState(false);
+	const [visible, setVisible] = useState(disableEntranceAnimation);
 	const [displayCount, setDisplayCount] = useState(0);
 
 	const hasData = visits.length > 0;
@@ -65,9 +69,13 @@ export const RecentVisits = memo(function RecentVisits({
 	const minCardWidthPx = parseCssSizeToPx(cardMinWidth);
 
 	useEffect(() => {
+		if (disableEntranceAnimation) {
+			setVisible(true);
+			return;
+		}
 		const timer = setTimeout(() => setVisible(true), delay);
 		return () => clearTimeout(timer);
-	}, [delay]);
+	}, [delay, disableEntranceAnimation]);
 
 	useEffect(() => {
 		if (!mounted || !visible) return;
@@ -130,9 +138,11 @@ export const RecentVisits = memo(function RecentVisits({
 		<div
 			className="transition-all duration-300 ease-out"
 			style={{
-				height,
+				height: disableEntranceAnimation ? "auto" : height,
 				opacity: visible ? 1 : 0,
-				transition: visible
+				transition: disableEntranceAnimation
+					? "none"
+					: visible
 					? "opacity 300ms ease-out, height 300ms ease-out"
 					: "none",
 			}}
@@ -165,6 +175,7 @@ export const RecentVisits = memo(function RecentVisits({
 									site={v}
 									trackVisit={false}
 									layout={layout}
+									siteLinkMode={siteLinkMode}
 								/>
 							))}
 						</div>

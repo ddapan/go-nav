@@ -177,10 +177,10 @@ export function EnginesEditor() {
 				</div>
 			</Tabs.Panel>
 
-			<Tabs.Panel id="list">
+			<Tabs.Panel id="list" className="px-0">
 				<div className="flex flex-col gap-4">
 					<div className="flex items-center justify-between">
-						<div className="flex items-center gap-2">
+						<div className="flex items-center gap-2 px-2">
 							<h3 className="text-base font-semibold">外部搜索引擎</h3>
 							<Chip variant="secondary" size="sm">
 								<Chip.Label>{s.engines.length}</Chip.Label>

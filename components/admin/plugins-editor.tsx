@@ -109,6 +109,9 @@ export function PluginsEditor() {
 						注入自定义 CSS / JS 到前台页面，仅前台页面生效，管理后台不受影响。
 					</p>
 				</div>
+				<div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-300">
+					JS 插件会在所有前台访问者浏览器中执行，只粘贴自己编写或完全信任来源的代码。备份导入时，JS 插件会默认禁用，需要在这里人工确认后再启用。
+				</div>
 				<div className="flex flex-wrap gap-2 text-xs text-default-500">
 					<Chip variant="secondary">
 						<Chip.Label>共 {counts.total} 个</Chip.Label>

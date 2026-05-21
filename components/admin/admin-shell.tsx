@@ -16,7 +16,7 @@ import {
 } from "@heroui/react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAtomValue, useSetAtom } from "jotai";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
 	BiCog,
 	BiGlobe,
@@ -36,6 +36,7 @@ import {
 	BiImport,
 	BiFile,
 	BiListCheck,
+	BiImage,
 	BiSync,
 } from "react-icons/bi";
 import {
@@ -62,6 +63,7 @@ type RouteKey =
 	| "plugins"
 	| "donation"
 	| "backup"
+	| "image-host"
 	| "sync"
 	| "import"
 	| "source-file";
@@ -166,15 +168,21 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
 		items: [
 			{
 				key: "backup",
-				label: "备份还原",
+				label: "本地备份",
 				icon: <BiArchive className="size-5" />,
 				desc: "数据 + 上传图片备份与还原",
 			},
 			{
 				key: "sync",
-				label: "数据同步",
+				label: "远端备份",
 				icon: <BiSync className="size-5" />,
 				desc: "GitHub / WebDAV 远端备份同步",
+			},
+			{
+				key: "image-host",
+				label: "图床设置",
+				icon: <BiImage className="size-5" />,
+				desc: "WebDAV / GitHub 图片上传",
 			},
 		],
 	},
@@ -203,25 +211,57 @@ function routeKeyFromPath(pathname: string | null): RouteKey {
  * 独立组件：只订阅 dirty / saving，按钮状态变化不会让 Shell 整体重渲染。
  */
 function SaveButton() {
+	const [mounted, setMounted] = useState(false);
 	const dirty = useAtomValue(dirtyAtom);
 	const saving = useAtomValue(savingAtom);
 	const save = useSetAtom(saveAtom);
+	useEffect(() => {
+		setMounted(true);
+	}, []);
 	const onPress = useCallback(async () => {
 		const r = await save();
 		if (r?.ok) toast.success("已保存");
 		else if (r && "error" in r && r.error) toast.danger(r.error);
 	}, [save]);
+	if (!mounted) {
+		return (
+			<form
+				autoComplete="off"
+				className="contents"
+				onSubmit={(event) => {
+					event.preventDefault();
+				}}
+			>
+				<button
+					type="button"
+					disabled
+					className="button button--md button--primary h-8 shrink-0"
+				>
+					<BiSave className="size-4" />
+					<span>已保存</span>
+				</button>
+			</form>
+		);
+	}
 	return (
-		<Button
-			variant="primary"
-			className="h-8 shrink-0"
-			isDisabled={!dirty || saving}
-			isPending={saving}
-			onPress={onPress}
+		<form
+			autoComplete="off"
+			className="contents"
+			onSubmit={(event) => {
+				event.preventDefault();
+			}}
 		>
-			<BiSave className="size-4" />
-			<span>{saving ? "保存中..." : dirty ? "保存" : "已保存"}</span>
-		</Button>
+			<Button
+				variant="primary"
+				className="h-8 shrink-0"
+				isDisabled={!dirty || saving}
+				isPending={saving}
+				onPress={onPress}
+			>
+				<BiSave className="size-4" />
+				<span>{saving ? "保存中..." : dirty ? "保存" : "已保存"}</span>
+			</Button>
+		</form>
 	);
 }
 
@@ -359,7 +399,7 @@ export function AdminShell({ children }: { children?: React.ReactNode }) {
 	}, [mobileDrawerState]);
 
 	const onLogout = useCallback(async () => {
-		await fetch("/api/auth/logout", { method: "POST" });
+		await fetch("/api/auth/logout/", { method: "POST" });
 		window.location.href = "/admin/login";
 	}, []);
 

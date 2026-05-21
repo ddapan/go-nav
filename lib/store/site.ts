@@ -32,6 +32,8 @@ export const DEFAULT_LAYOUT: Required<LayoutConfig> = {
 	linkTarget: "new",
 	autoUseIntranet: false,
 	enableSiteDetailPage: false,
+	showSubcategoryTabs: true,
+	showCategorySearch: false,
 };
 
 const EMPTY_WEBSITE: WebsiteData = { categories: [] };
@@ -71,11 +73,11 @@ export const layoutAtom = atom<Required<LayoutConfig>>((get) => ({
 	...(get(siteNavAtom).layout ?? {}),
 }));
 
-export const categoriesAtom = atom((get) => get(siteWebsiteDataAtom).categories);
+export const categoriesAtom = atom((get) => get(siteWebsiteDataAtom).categories ?? []);
 
 export const enabledAdsAtom = atom((get) =>
-	get(siteNavAtom)
-		.ads.filter((a) => a.enabled)
+	(get(siteNavAtom).ads ?? [])
+		.filter((a) => a.enabled)
 		.sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0)),
 );
 
@@ -118,7 +120,7 @@ export const navQrCodeTextAtom = atom((get) => get(siteNavAtom).qrCodeText);
 export const footerLinksAtom = atom(
 	(get) => get(siteNavAtom).footerLinks ?? EMPTY_FOOTER_LINKS,
 );
-export const searchConfigAtom = atom((get) => get(siteNavAtom).search);
+export const searchConfigAtom = atom((get) => get(siteNavAtom).search ?? EMPTY_NAV.search);
 export const adsAspectRatioAtom = atom(
 	(get) => get(siteNavAtom).adsAspectRatio,
 );
@@ -128,6 +130,14 @@ export const showRecentVisitsAtom = atom(
 );
 export const recentVisitsMaxAtom = atom(
 	(get) => get(siteNavAtom).recentVisitsMax ?? 20,
+);
+
+export const showSubcategoryTabsAtom = atom(
+	(get) => get(layoutAtom).showSubcategoryTabs !== false,
+);
+
+export const showCategorySearchAtom = atom(
+	(get) => get(layoutAtom).showCategorySearch === true,
 );
 
 /** 启用的插件列表（按 sort 排序），供 layout 注入使用 */

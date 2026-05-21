@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { createHash } from "node:crypto";
 import path from "node:path";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import type { NavConfig, WebsiteData } from "@/types";
@@ -186,21 +187,68 @@ export function writeNav(v: NavConfig) {
 	pruneLegacyStructuredFiles("nav", target);
 }
 
+export function getConfigRevision(): string {
+	const parts = [resolveWebsiteFilePathForRead(), resolveNavFilePathForRead()].map(
+		(file) => {
+			try {
+				const stat = fs.statSync(file);
+				return `${file}:${stat.mtimeMs}:${stat.size}`;
+			} catch {
+				return `${file}:missing`;
+			}
+		},
+	);
+	return createHash("sha256").update(parts.join("|")).digest("hex").slice(0, 16);
+}
+
 /**
  * 保存上传文件到 UPLOADS_DIR，返回对外可访问的 URL（/uploads/xxx）。
  */
-export function saveUpload(fileName: string, bytes: Buffer): string {
+export interface SaveUploadOptions {
+	/**
+	 * 开启后会按内容哈希去重：同内容文件复用已有 URL，避免重复写入。
+	 */
+	dedupeByContent?: boolean;
+	/**
+	 * 当前正在使用的上传 URL（例如站点现有 icon/preview）。
+	 * 当内容一致时优先复用该 URL，避免字段发生无意义变更。
+	 */
+	preferredExistingUrl?: string;
+}
+
+export function saveUpload(
+	fileName: string,
+	bytes: Buffer,
+	options?: SaveUploadOptions,
+): string {
 	fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 	const ext = sanitizeExtension(path.extname(fileName)) || ".bin";
 	const base = createUploadBaseName(
 		path.basename(fileName, path.extname(fileName)),
 	);
-	let unique = "";
-	do {
-		unique = `${base}-${Math.random().toString(36).slice(2, 8)}${ext}`;
-	} while (fs.existsSync(path.join(UPLOADS_DIR, unique)));
-	fs.writeFileSync(path.join(UPLOADS_DIR, unique), bytes);
-	return `/uploads/${unique}`;
+	if (!options?.dedupeByContent) {
+		return saveUploadWithRandomSuffix(base, ext, bytes);
+	}
+
+	const contentHash = createUploadContentHash(bytes);
+	const preferredPath = resolveUploadPathFromUrl(options.preferredExistingUrl);
+	if (preferredPath && hasUploadWithHash(preferredPath, contentHash)) {
+		return toUploadUrl(path.basename(preferredPath));
+	}
+
+	const hashFileName = `${base}-${contentHash.slice(0, 12)}${ext}`;
+	const hashFilePath = path.join(UPLOADS_DIR, hashFileName);
+	if (hasUploadWithHash(hashFilePath, contentHash)) {
+		return toUploadUrl(hashFileName);
+	}
+
+	const existing = findExistingUploadByHash(base, ext, contentHash);
+	if (existing) {
+		return existing;
+	}
+
+	fs.writeFileSync(hashFilePath, bytes);
+	return toUploadUrl(hashFileName);
 }
 
 function sanitizeExtension(ext: string): string {
@@ -219,6 +267,80 @@ function createUploadBaseName(name: string): string {
 		.slice(0, 28)
 		.replace(/-+$/g, "");
 	return slug || "icon";
+}
+
+function saveUploadWithRandomSuffix(base: string, ext: string, bytes: Buffer): string {
+	let unique = "";
+	do {
+		unique = `${base}-${Math.random().toString(36).slice(2, 8)}${ext}`;
+	} while (fs.existsSync(path.join(UPLOADS_DIR, unique)));
+	fs.writeFileSync(path.join(UPLOADS_DIR, unique), bytes);
+	return toUploadUrl(unique);
+}
+
+function toUploadUrl(fileName: string): string {
+	return `/uploads/${fileName}`;
+}
+
+function createUploadContentHash(bytes: Buffer): string {
+	return createHash("sha256").update(bytes).digest("hex");
+}
+
+function hasUploadWithHash(filePath: string, expectedHash: string): boolean {
+	try {
+		if (!fs.existsSync(filePath)) return false;
+		if (!fs.statSync(filePath).isFile()) return false;
+		const existingHash = createUploadContentHash(fs.readFileSync(filePath));
+		return existingHash === expectedHash;
+	} catch {
+		return false;
+	}
+}
+
+function resolveUploadPathFromUrl(url: string | undefined): string | null {
+	if (!url) return null;
+	const clean = url.split("?")[0]?.split("#")[0] || "";
+	if (!clean.startsWith("/uploads/")) return null;
+	const rawFileName = clean.slice("/uploads/".length);
+	if (!rawFileName || rawFileName.includes("/") || rawFileName.includes("\\")) {
+		return null;
+	}
+	let fileName = rawFileName;
+	try {
+		fileName = decodeURIComponent(rawFileName);
+	} catch {
+		return null;
+	}
+	const filePath = path.join(UPLOADS_DIR, fileName);
+	const rel = path.relative(UPLOADS_DIR, filePath);
+	if (rel.startsWith("..") || path.isAbsolute(rel)) return null;
+	return filePath;
+}
+
+function findExistingUploadByHash(
+	base: string,
+	ext: string,
+	expectedHash: string,
+): string | null {
+	const prefix = `${base}-`;
+	try {
+		const entries = fs.readdirSync(UPLOADS_DIR, { withFileTypes: true });
+		for (const entry of entries) {
+			if (!entry.isFile()) continue;
+			const name = entry.name;
+			if (path.extname(name).toLowerCase() !== ext) continue;
+			const isTargetBase =
+				name === `${base}${ext}` || name.startsWith(prefix);
+			if (!isTargetBase) continue;
+			const filePath = path.join(UPLOADS_DIR, name);
+			if (hasUploadWithHash(filePath, expectedHash)) {
+				return toUploadUrl(name);
+			}
+		}
+	} catch {
+		// readdir 异常时回退为直接写新文件，不影响主流程。
+	}
+	return null;
 }
 
 function stripComments<T>(input: T): T {

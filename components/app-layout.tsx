@@ -1,8 +1,9 @@
 "use client";
 import { BiLinkExternal } from "react-icons/bi";
-import Link from "next/link";
-import { useCallback, useMemo } from "react";
-import { useAtomValue } from "jotai";
+import { useCallback, useEffect, useMemo } from "react";
+import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useAtomValue, useSetAtom } from "jotai";
 import { Button, Chip, EmptyState } from "@heroui/react";
 import { HeaderBundle } from "./header-bundle";
 import { AppSidebar } from "./app-sidebar";
@@ -13,6 +14,7 @@ import { FloatingActions } from "./floating-actions";
 import { useActiveSectionWriter } from "@/hooks/use-active-section";
 import { recordVisit } from "@/hooks/use-recent-visits";
 import {
+	activeIdAtom,
 	adsAspectRatioAtom,
 	categoriesAtom,
 	enabledAdsAtom,
@@ -20,10 +22,18 @@ import {
 	recentVisitsMaxAtom,
 	showAdsAtom,
 	showRecentVisitsAtom,
+	showSubcategoryTabsAtom,
 } from "@/lib/store/site";
 import { openSiteWithPreference } from "@/lib/client/site-link";
 import {
+	clearHomeSnapshot,
+	consumeHomeRestoreRequest,
+	readHomeSnapshot,
+	requestHomeRestore,
+} from "@/lib/client/home-restore";
+import {
 	collectSiteDetailEntries,
+	findSiteDetailEntryBySlug,
 	type SiteDetailEntry,
 } from "@/lib/site-detail";
 import { SiteIcon, toPx } from "./site-icon";
@@ -38,7 +48,19 @@ import type { LayoutConfig } from "@/types";
  *   AppLayout 本身不再订阅 activeId，滚动时不会重渲染。
  * - 抽屉开关 / 搜索引擎等状态下沉到 HeaderBundle。
  */
-export function AppLayout({ detailSlug }: { detailSlug?: string }) {
+export function AppLayout() {
+	const pathname = usePathname();
+	const detailSlug = useMemo(() => {
+		if (!pathname.startsWith("/site/")) return null;
+		const rawSlug = pathname.slice("/site/".length).split("/")[0];
+		if (!rawSlug) return null;
+		try {
+			return decodeURIComponent(rawSlug);
+		} catch {
+			return rawSlug;
+		}
+	}, [pathname]);
+	const isDetailRoute = detailSlug !== null;
 	const layout = useAtomValue(layoutAtom);
 	const categories = useAtomValue(categoriesAtom);
 	const enabledAds = useAtomValue(enabledAdsAtom);
@@ -46,6 +68,24 @@ export function AppLayout({ detailSlug }: { detailSlug?: string }) {
 	const showAds = useAtomValue(showAdsAtom);
 	const showRecentVisits = useAtomValue(showRecentVisitsAtom);
 	const recentVisitsMax = useAtomValue(recentVisitsMaxAtom);
+	const showSubcategoryTabs = useAtomValue(showSubcategoryTabsAtom);
+	const setActiveId = useSetAtom(activeIdAtom);
+	const [disableRecentVisitsEntrance, setDisableRecentVisitsEntrance] =
+		useState(false);
+
+	const displayCategories = useMemo(() => {
+		if (showSubcategoryTabs) return categories.map((c) => ({ category: c, isChild: false }));
+		const result: Array<{ category: typeof categories[number]; isChild: boolean }> = [];
+		for (const cat of categories) {
+			result.push({ category: cat, isChild: false });
+			if (cat.children && cat.children.length > 0) {
+				for (const child of cat.children) {
+					result.push({ category: child, isChild: true });
+				}
+			}
+		}
+		return result;
+	}, [categories, showSubcategoryTabs]);
 
 	// 滚动监听：只写入 activeIdAtom，不触发本组件重渲染
 	useActiveSectionWriter();
@@ -56,15 +96,55 @@ export function AppLayout({ detailSlug }: { detailSlug?: string }) {
 	);
 	const selectedEntry = useMemo(() => {
 		if (!detailEnabled || !detailSlug) return null;
-		return detailEntries.find((item) => item.slug === detailSlug) ?? null;
+		return findSiteDetailEntryBySlug(detailEntries, detailSlug);
 	}, [detailEnabled, detailEntries, detailSlug]);
+
+	// 进入详情页时总是从顶部开始，避免继承上次页面滚动位置
+	useEffect(() => {
+		if (!isDetailRoute) return;
+		window.scrollTo({ top: 0, behavior: "auto" });
+	}, [isDetailRoute, pathname]);
+
+	// 从详情返回首页时，恢复离开前的分类和滚动位置
+	useEffect(() => {
+		if (pathname !== "/") return;
+		const shouldRestore = consumeHomeRestoreRequest();
+		if (!shouldRestore) return;
+		setDisableRecentVisitsEntrance(true);
+		const snapshot = readHomeSnapshot();
+		if (!snapshot) return;
+		if (snapshot.activeId) {
+			setActiveId(snapshot.activeId);
+		}
+		const restoreSmooth = () =>
+			window.scrollTo({ top: snapshot.scrollY, behavior: "smooth" });
+		const restoreFinal = () =>
+			window.scrollTo({ top: snapshot.scrollY, behavior: "auto" });
+		const timers = [
+			window.setTimeout(restoreSmooth, 40),
+			window.setTimeout(restoreFinal, 900),
+		];
+		requestAnimationFrame(restoreSmooth);
+		clearHomeSnapshot();
+		return () => {
+			for (const timer of timers) {
+				window.clearTimeout(timer);
+			}
+		};
+	}, [pathname, setActiveId]);
+
+	useEffect(() => {
+		if (pathname !== "/") {
+			setDisableRecentVisitsEntrance(false);
+		}
+	}, [pathname]);
 
 	return (
 		<div className="flex min-h-dvh flex-col">
 			<HeaderBundle showSearch={layout.showSearch} />
 
 			<div className="flex min-w-0 flex-1">
-				{layout.showSidebar && categories.length > 0 && (
+				{layout.showSidebar && displayCategories.length > 0 && (
 					<AppSidebar
 						width={toPx(layout.sidebarWidth)}
 						ads={enabledAds}
@@ -87,7 +167,18 @@ export function AppLayout({ detailSlug }: { detailSlug?: string }) {
 					}
 				>
 					<main className="min-w-0 flex-1 py-2">
-						{categories.length === 0 ? (
+						{selectedEntry ? (
+							<SiteDetailPage entry={selectedEntry} layout={layout} />
+						) : isDetailRoute ? (
+							<div className="flex flex-col items-center justify-center py-24">
+								<EmptyState className="text-center">
+									<h2 className="text-xl font-semibold">未找到该网址</h2>
+									<p className="text-sm text-muted">
+										当前详情页地址无效，请返回首页重新选择。
+									</p>
+								</EmptyState>
+							</div>
+						) : displayCategories.length === 0 ? (
 							<div className="flex flex-col items-center justify-center py-24">
 								<EmptyState className="text-center">
 									<h2 className="text-xl font-semibold">开始使用 Go Nav</h2>
@@ -98,45 +189,43 @@ export function AppLayout({ detailSlug }: { detailSlug?: string }) {
 							</div>
 						) : (
 							<>
-								{selectedEntry ? (
-									<SiteDetailPage entry={selectedEntry} layout={layout} />
-								) : (
-									<>
-										{showRecentVisits && (
-											<RecentVisits
-												maxItems={recentVisitsMax}
-												cardMinWidth={toPx(layout.cardMinWidth)}
-												cardHeight={toPx(layout.cardHeight)}
-												cardGridPadding={toPx(layout.cardGridPadding)}
-												sectionGap={toPx(layout.sectionGap)}
-												layout={layout}
-											/>
-										)}
-
-										<div
-											style={{
-												display: "flex",
-												flexDirection: "column",
-												gap: toPx(layout.sectionGap),
-											}}
-										>
-											{categories.map((c) => (
-												<CategorySection
-													key={c.id}
-													category={c}
-													cardMinWidth={toPx(layout.cardMinWidth)}
-													cardHeight={toPx(layout.cardHeight)}
-													cardGridPadding={toPx(layout.cardGridPadding)}
-													showCategoryTitle={layout.showCategoryTitle}
-													showCategoryDescription={
-														layout.showCategoryDescription
-													}
-													layout={layout}
-												/>
-											))}
-										</div>
-									</>
+								{showRecentVisits && (
+									<RecentVisits
+										maxItems={recentVisitsMax}
+										cardMinWidth={toPx(layout.cardMinWidth)}
+										cardHeight={toPx(layout.cardHeight)}
+										cardGridPadding={toPx(layout.cardGridPadding)}
+										sectionGap={toPx(layout.sectionGap)}
+										disableEntranceAnimation={
+											disableRecentVisitsEntrance
+										}
+										layout={layout}
+									/>
 								)}
+
+								<div
+									style={{
+										display: "flex",
+										flexDirection: "column",
+										gap: toPx(layout.sectionGap),
+									}}
+								>
+									{displayCategories.map((c) => (
+										<CategorySection
+											key={c.category.id}
+											category={c.category}
+											isChild={c.isChild}
+											cardMinWidth={toPx(layout.cardMinWidth)}
+											cardHeight={toPx(layout.cardHeight)}
+											cardGridPadding={toPx(layout.cardGridPadding)}
+											showCategoryTitle={layout.showCategoryTitle}
+											showCategoryDescription={
+												layout.showCategoryDescription
+											}
+											layout={layout}
+										/>
+									))}
+								</div>
 							</>
 						)}
 					</main>
@@ -161,8 +250,13 @@ function SiteDetailPage({
 	entry: SiteDetailEntry;
 	layout: Required<LayoutConfig>;
 }) {
+	const router = useRouter();
 	const site = entry.site;
 	const tags = site.tags?.filter((tag) => tag.trim()) ?? [];
+	const handleBack = useCallback(() => {
+		requestHomeRestore();
+		router.push("/", { scroll: false });
+	}, [router]);
 	const handleVisit = useCallback(() => {
 		recordVisit(site);
 		void openSiteWithPreference(site, {
@@ -171,19 +265,20 @@ function SiteDetailPage({
 		});
 	}, [layout.autoUseIntranet, layout.linkTarget, site]);
 
-	return (
-		<section className="w-full px-2">
-			<div className="mb-4 flex items-center gap-3">
-				<Link
-					href="/"
-					aria-label="返回列表"
-					className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-black/10 bg-white text-base text-zinc-700 transition hover:border-black/20 hover:text-zinc-900 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-white/20 dark:hover:text-zinc-100"
-				>
-					←
-				</Link>
-				<h2 className="text-lg font-semibold text-zinc-800 dark:text-zinc-200">
-					网址详情
-				</h2>
+		return (
+			<section className="w-full px-2">
+				<div className="mb-4 flex items-center gap-3">
+					<button
+						type="button"
+						onClick={handleBack}
+						aria-label="返回列表"
+						className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-black/10 bg-white text-base text-zinc-700 transition hover:border-black/20 hover:text-zinc-900 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-white/20 dark:hover:text-zinc-100"
+					>
+						←
+					</button>
+					<h2 className="text-lg font-semibold text-zinc-800 dark:text-zinc-200">
+						网址详情
+					</h2>
 			</div>
 
 			<div className="space-y-4">

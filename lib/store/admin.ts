@@ -54,6 +54,7 @@ export const _savedNavAtom = atom<NavConfig>(EMPTY_NAV);
 export const _savedWebsiteDataAtom = atom<WebsiteData>(EMPTY_WEBSITE);
 
 export const savingAtom = atom(false);
+export const configRevisionAtom = atom<string>("");
 const dirtyFlagAtom = atom(false);
 
 export const dirtyAtom = atom(
@@ -242,10 +243,16 @@ export const saveAtom = atom(null, async (get, set) => {
 		const body = JSON.stringify({
 			websiteData: get(websiteDataAtom),
 			nav: get(navAtom),
+			revision: get(configRevisionAtom),
 		});
-		const res = await fetch("/api/config", {
+		const res = await fetch("/api/config/", {
 			method: "PUT",
-			headers: { "Content-Type": "application/json" },
+			headers: {
+				"Content-Type": "application/json",
+				...(get(configRevisionAtom)
+					? { "If-Match": `"${get(configRevisionAtom)}"` }
+					: {}),
+			},
 			body,
 		});
 		if (!res.ok) {
@@ -255,6 +262,8 @@ export const saveAtom = atom(null, async (get, set) => {
 				error: d.error || `保存失败 (${res.status})`,
 			};
 		}
+		const d = (await res.json().catch(() => ({}))) as { revision?: string };
+		if (d.revision) set(configRevisionAtom, d.revision);
 		set(dirtyAtom, false);
 		return { ok: true as const };
 	} catch (e) {

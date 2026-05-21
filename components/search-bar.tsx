@@ -17,7 +17,6 @@ import { recordVisit } from "@/hooks/use-recent-visits";
 import { openSiteWithPreference } from "@/lib/client/site-link";
 import { getIconImageSrc } from "@/lib/icon";
 import { SiteIcon } from "./site-icon";
-import fetchJsonp from "fetch-jsonp";
 
 interface SuggestionItem {
 	label: string;
@@ -89,6 +88,7 @@ export function SearchBar({
 		}
 	}, [onEngineChange]);
 	const [query, setQuery] = useState("");
+	const [searchIndexReady, setSearchIndexReady] = useState(false);
 	const [isOpen, setIsOpen] = useState(false);
 	const [activeIndex, setActiveIndex] = useState(-1);
 	const [suggestions, setSuggestions] = useState<SuggestionItem[]>(EMPTY_SUGGESTIONS);
@@ -121,7 +121,7 @@ export function SearchBar({
 	// 预建小写索引，避免每次按键都对全量 sites 重复 toLowerCase / 多字段拼接。
 	// 懒构建：仅在启用本地搜索时才构建；sites 引用稳定时只跑一次。
 	const searchIndex = useMemo(() => {
-		if (!enableLocal)
+		if (!enableLocal || !searchIndexReady)
 			return [] as Array<{
 				site: (typeof sites)[number];
 				hay: string;
@@ -147,7 +147,7 @@ export function SearchBar({
 			};
 		}
 		return out;
-	}, [enableLocal, sites]);
+	}, [enableLocal, searchIndexReady, sites]);
 
 	// useDeferredValue 让高频输入不阻塞 UI，React 会用较低优先级重算 results
 	const deferredQuery = useDeferredValue(query);
@@ -231,7 +231,8 @@ export function SearchBar({
 		suggestionTimerRef.current = setTimeout(() => {
 			const content = query.trim();
 			const api = `https://suggestion.baidu.com/su?wd=${encodeURIComponent(content)}&ie=utf-8&p=3`;
-			fetchJsonp(api, { jsonpCallback: "cb" })
+			import("fetch-jsonp")
+				.then((mod) => mod.default(api, { jsonpCallback: "cb" }))
 				.then((response) => response.json())
 				.then((data: BaiduSuggestionResponse) => {
 					if (suggestionRequestRef.current !== requestId) return;
@@ -285,6 +286,7 @@ export function SearchBar({
 			if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
 				e.preventDefault();
 				e.stopImmediatePropagation();
+				setSearchIndexReady(true);
 				inputRef.current?.focus();
 				return;
 			}
@@ -321,6 +323,7 @@ export function SearchBar({
 			// ListBox/Select 可能在 capture 阶段转移焦点），保证我们的 focus 不被覆盖。
 			e.preventDefault();
 			e.stopImmediatePropagation();
+			setSearchIndexReady(true);
 			inputRef.current?.focus();
 			// 同一 keydown 中 react-aria 仍可能在其他路径上使用合成事件转移焦点，
 			// 用 rAF 兑现一次充当兑现，干净且可靠。
@@ -374,6 +377,14 @@ export function SearchBar({
 
 	const handleInputKeyDown = (e: ReactKeyboardEvent<HTMLInputElement>) => {
 		if (e.nativeEvent.isComposing) return;
+		if (e.key === "Escape") {
+			e.preventDefault();
+			e.stopPropagation();
+			setIsOpen(false);
+			setActiveIndex(-1);
+			e.currentTarget.blur();
+			return;
+		}
 		if (e.key !== "ArrowDown" && e.key !== "ArrowUp" && e.key !== "Enter") {
 			return;
 		}
@@ -408,6 +419,25 @@ export function SearchBar({
 			e.preventDefault();
 			openSuggestion(selected);
 		}
+	};
+
+	const handleInputKeyDownCapture = (
+		e: ReactKeyboardEvent<HTMLInputElement>,
+	) => {
+		if (e.nativeEvent.isComposing) return;
+		if (e.key !== "Escape") return;
+		const keepValue = e.currentTarget.value;
+		e.preventDefault();
+		e.stopPropagation();
+		(
+			e.nativeEvent as KeyboardEvent & { stopImmediatePropagation?: () => void }
+		).stopImmediatePropagation?.();
+		setIsOpen(false);
+		setActiveIndex(-1);
+		requestAnimationFrame(() => {
+			setQuery(keepValue);
+			inputRef.current?.blur();
+		});
 	};
 
 	const handleSubmit = (val: string) => {
@@ -500,7 +530,10 @@ export function SearchBar({
 							prev.length === 0 ? prev : EMPTY_SUGGESTIONS,
 						);
 					}}
-					onFocus={() => setIsOpen(true)}
+					onFocus={() => {
+						setIsOpen(true);
+						setSearchIndexReady(true);
+					}}
 				>
 					<Label className="sr-only">搜索</Label>
 					<SearchField.Group>
@@ -509,6 +542,7 @@ export function SearchBar({
 							className={"w-0"}
 							ref={inputRef}
 							placeholder={placeholder}
+							onKeyDownCapture={handleInputKeyDownCapture}
 							onKeyDown={handleInputKeyDown}
 						/>
 						<SearchField.ClearButton />

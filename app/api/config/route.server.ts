@@ -3,7 +3,13 @@ import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import type { NavConfig, WebsiteData } from "@/types";
 import { SESSION_COOKIE, verifySession } from "@/lib/server/auth";
-import { readNav, readWebsiteData, writeNav, writeWebsiteData } from "@/lib/server/store";
+import {
+	getConfigRevision,
+	readNav,
+	readWebsiteData,
+	writeNav,
+	writeWebsiteData,
+} from "@/lib/server/store";
 
 async function requireAuth(): Promise<boolean> {
 	const store = await cookies();
@@ -21,7 +27,14 @@ export async function GET() {
 		return NextResponse.json({ error: "未登录" }, { status: 401 });
 	}
 	try {
-		return NextResponse.json({ websiteData: readWebsiteData(), nav: readNav() });
+		const revision = getConfigRevision();
+		const res = NextResponse.json({
+			websiteData: readWebsiteData(),
+			nav: readNav(),
+			revision,
+		});
+		res.headers.set("ETag", `"${revision}"`);
+		return res;
 	} catch (e) {
 		return NextResponse.json({ error: (e as Error).message }, { status: 500 });
 	}
@@ -35,17 +48,33 @@ export async function PUT(req: Request) {
 	if (!(await requireAuth())) {
 		return NextResponse.json({ error: "未登录" }, { status: 401 });
 	}
-	let body: { websiteData?: WebsiteData; nav?: NavConfig };
+	let body: { websiteData?: WebsiteData; nav?: NavConfig; revision?: string };
 	try {
 		body = await req.json();
 	} catch {
 		return NextResponse.json({ error: "invalid body" }, { status: 400 });
 	}
 	try {
+		const currentRevision = getConfigRevision();
+		const ifMatch = req.headers.get("if-match")?.replace(/^"|"$/g, "");
+		const expectedRevision = body.revision || ifMatch;
+		if (expectedRevision && expectedRevision !== currentRevision) {
+			return NextResponse.json(
+				{
+					error:
+						"配置已被其它会话更新，请刷新后台后再保存，避免覆盖他人的改动。",
+					revision: currentRevision,
+				},
+				{ status: 409 },
+			);
+		}
 		if (body.websiteData) writeWebsiteData(body.websiteData);
 		if (body.nav) writeNav(body.nav);
 		revalidatePath("/");
-		return NextResponse.json({ ok: true });
+		const revision = getConfigRevision();
+		const res = NextResponse.json({ ok: true, revision });
+		res.headers.set("ETag", `"${revision}"`);
+		return res;
 	} catch (e) {
 		return NextResponse.json({ error: (e as Error).message }, { status: 500 });
 	}

@@ -15,6 +15,7 @@ import {
 	_savedNavAtom,
 	_savedWebsiteDataAtom,
 	_websiteDataBaseAtom,
+	configRevisionAtom,
 } from "./admin";
 import { siteNavAtom, siteWebsiteDataAtom } from "./site";
 
@@ -22,7 +23,7 @@ function AdminHydrate({
 	initial,
 	children,
 }: {
-	initial: { websiteData: WebsiteData; nav: NavConfig };
+	initial: { websiteData: WebsiteData; nav: NavConfig; revision?: string };
 	children: React.ReactNode;
 }) {
 	useHydrateAtoms([
@@ -30,6 +31,7 @@ function AdminHydrate({
 		[_navBaseAtom, initial.nav],
 		[_savedWebsiteDataAtom, initial.websiteData],
 		[_savedNavAtom, initial.nav],
+		[configRevisionAtom, initial.revision ?? ""],
 	] as const);
 	return <>{children}</>;
 }
@@ -38,7 +40,7 @@ export function AdminStoreProvider({
 	initial,
 	children,
 }: {
-	initial: { websiteData: WebsiteData; nav: NavConfig };
+	initial: { websiteData: WebsiteData; nav: NavConfig; revision?: string };
 	children: React.ReactNode;
 }) {
 	return (

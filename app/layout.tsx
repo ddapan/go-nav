@@ -57,9 +57,6 @@ export default function RootLayout({
 				<script
 					dangerouslySetInnerHTML={{ __html: getThemeScript(themeMode) }}
 				/>
-				<script
-					dangerouslySetInnerHTML={{ __html: `if("scrollRestoration"in history)history.scrollRestoration="manual";window.scrollTo(0,0)` }}
-				/>
 			</head>
 			<body className="min-h-full flex flex-col">
 				<ThemeProvider mode={themeMode}>

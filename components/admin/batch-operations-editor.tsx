@@ -1,5 +1,6 @@
 "use client";
 
+import type { Key } from "@heroui/react";
 import {
 	Button,
 	Checkbox,
@@ -7,7 +8,9 @@ import {
 	Chip,
 	InputGroup,
 	Label,
+	ListBox,
 	ProgressBar,
+	Select,
 	Spinner,
 	Table,
 	TableLayout,
@@ -29,6 +32,7 @@ import { categoriesAtom } from "@/lib/store/admin";
 import type { NavCategory, NavSite } from "@/types";
 import { getIconImageSrc } from "@/lib/icon";
 import { resolveSiteBackgroundColor, toPx } from "@/components/site-icon";
+import Loading from "./loading";
 
 type BatchStatus = "idle" | "running" | "pausing" | "paused" | "finished";
 type RowStatus = "pending" | "running" | "success" | "failure";
@@ -56,6 +60,15 @@ interface BatchSiteRow {
 	hasDescription: boolean;
 	hasIcon: boolean;
 	hasPreviewImage: boolean;
+}
+
+interface CategoryFilterOption {
+	id: string;
+	name: string;
+	path: string;
+	level: number;
+	siteCount: number;
+	categoryIds: string[];
 }
 
 type SitePatch = Partial<
@@ -104,6 +117,7 @@ const TABLE_MIN_WIDTH = Object.values(TABLE_COLUMN_WIDTHS).reduce(
 const DEFAULT_BATCH_CONCURRENCY = 3;
 const MIN_BATCH_CONCURRENCY = 1;
 const MAX_BATCH_CONCURRENCY = 20;
+const ALL_CATEGORY_FILTER_KEY = "__all_categories__";
 
 function normalizeUpdateFields(values: string[]) {
 	return UPDATE_FIELD_OPTIONS.filter((option) =>
@@ -158,6 +172,58 @@ function collectSiteRows(categories: NavCategory[]) {
 	return rows;
 }
 
+function countSitesInCategory(category: NavCategory): number {
+	return (
+		(category.sites?.length ?? 0) +
+		(category.children ?? []).reduce(
+			(total, child) => total + countSitesInCategory(child),
+			0,
+		)
+	);
+}
+
+function collectCategoryIds(category: NavCategory): string[] {
+	return [
+		category.id,
+		...(category.children ?? []).flatMap((child) => collectCategoryIds(child)),
+	];
+}
+
+function collectCategoryFilterOptions(categories: NavCategory[]) {
+	const options: CategoryFilterOption[] = [];
+	const walk = (items: NavCategory[], path: string[], level: number) => {
+		for (const category of items) {
+			const nextPath = [...path, category.name];
+			const siteCount = countSitesInCategory(category);
+			if (siteCount > 0) {
+				options.push({
+					id: category.id,
+					name: category.name,
+					path: nextPath.join(" / "),
+					level,
+					siteCount,
+					categoryIds: collectCategoryIds(category),
+				});
+			}
+			if (category.children?.length) {
+				walk(category.children, nextPath, level + 1);
+			}
+		}
+	};
+	walk(categories, [], 0);
+	return options;
+}
+
+function stringifyKeys(keys: Iterable<Key> | Key[] | null) {
+	if (!keys) return [];
+	return Array.from(keys, String);
+}
+
+function areStringArraysEqual(a: string[], b: string[]) {
+	if (a.length !== b.length) return false;
+	return a.every((item, index) => item === b[index]);
+}
+
 function patchSiteInCategories(
 	categories: NavCategory[],
 	row: BatchSiteRow,
@@ -191,7 +257,11 @@ function patchSiteInCategories(
 async function fetchWebsitePatch(
 	url: string,
 	updateFields: BatchUpdateField[],
-	signal?: AbortSignal,
+	options?: {
+		signal?: AbortSignal;
+		existingIconUrl?: string;
+		existingPreviewUrl?: string;
+	},
 ) {
 	if (!url.trim()) {
 		throw new Error("缺少网站地址");
@@ -208,9 +278,9 @@ async function fetchWebsitePatch(
 		  }
 		| undefined;
 	if (needsSiteMeta) {
-		const res = await fetch("/api/fetch-website", {
+		const res = await fetch("/api/fetch-website/", {
 			method: "POST",
-			signal,
+			signal: options?.signal,
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ url }),
 		});
@@ -244,11 +314,14 @@ async function fetchWebsitePatch(
 	}
 	if (shouldUpdateIcon && data?.faviconUrl) {
 		try {
-			const uploadRes = await fetch("/api/tools/uploadFavicon", {
+			const uploadRes = await fetch("/api/tools/uploadFavicon/", {
 				method: "POST",
-				signal,
+				signal: options?.signal,
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ faviconUrl: data?.faviconUrl }),
+				body: JSON.stringify({
+					faviconUrl: data?.faviconUrl,
+					existingIconUrl: options?.existingIconUrl,
+				}),
 			});
 			if (uploadRes.ok) {
 				const uploadData = (await uploadRes.json()) as { url?: string };
@@ -263,11 +336,14 @@ async function fetchWebsitePatch(
 	}
 	if (shouldUpdatePreviewImage) {
 		try {
-			const previewRes = await fetch("/api/tools/capturePreview", {
+			const previewRes = await fetch("/api/tools/capturePreview/", {
 				method: "POST",
-				signal,
+				signal: options?.signal,
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ url }),
+				body: JSON.stringify({
+					url,
+					existingPreviewUrl: options?.existingPreviewUrl,
+				}),
 			});
 			if (previewRes.ok) {
 				const previewData = (await previewRes.json()) as { url?: string };
@@ -323,6 +399,9 @@ export function BatchOperationsEditor() {
 	const [selectedFields, setSelectedFields] = useState<string[]>(
 		DEFAULT_UPDATE_FIELDS,
 	);
+	const [selectedCategoryKeys, setSelectedCategoryKeys] = useState<string[]>([
+		ALL_CATEGORY_FILTER_KEY,
+	]);
 	const [concurrencyInput, setConcurrencyInput] = useState(
 		String(DEFAULT_BATCH_CONCURRENCY),
 	);
@@ -341,6 +420,33 @@ export function BatchOperationsEditor() {
 		() => normalizeUpdateFields(selectedFields),
 		[selectedFields],
 	);
+	const categoryOptions = useMemo(
+		() => collectCategoryFilterOptions(categories),
+		[categories],
+	);
+	const categoryOptionIds = useMemo(
+		() => categoryOptions.map((option) => option.id),
+		[categoryOptions],
+	);
+	const categoryOptionIdSet = useMemo(
+		() => new Set(categoryOptionIds),
+		[categoryOptionIds],
+	);
+	const activeCategoryIdSet = useMemo(() => {
+		if (selectedCategoryKeys.includes(ALL_CATEGORY_FILTER_KEY)) return null;
+		const selectedCategoryIds = new Set<string>();
+		for (const option of categoryOptions) {
+			if (!selectedCategoryKeys.includes(option.id)) continue;
+			for (const categoryId of option.categoryIds) {
+				selectedCategoryIds.add(categoryId);
+			}
+		}
+		return selectedCategoryIds;
+	}, [categoryOptions, selectedCategoryKeys]);
+	const isAllCategoriesSelected = activeCategoryIdSet === null;
+	const selectedCategoryLabel = isAllCategoriesSelected
+		? "全部分类"
+		: `已选 ${selectedCategoryKeys.length} 个分类`;
 	const concurrency = useMemo(
 		() => clampConcurrency(Number.parseInt(concurrencyInput, 10)),
 		[concurrencyInput],
@@ -375,6 +481,51 @@ export function BatchOperationsEditor() {
 		setStats(EMPTY_STATS);
 		setActiveRow(null);
 	}, []);
+
+	useEffect(() => {
+		if (selectedCategoryKeys.includes(ALL_CATEGORY_FILTER_KEY)) return;
+		const validKeys = selectedCategoryKeys.filter((key) =>
+			categoryOptionIdSet.has(key),
+		);
+		const nextKeys =
+			validKeys.length > 0 ? validKeys : [ALL_CATEGORY_FILTER_KEY];
+		if (areStringArraysEqual(selectedCategoryKeys, nextKeys)) return;
+		setSelectedCategoryKeys(nextKeys);
+	}, [categoryOptionIdSet, selectedCategoryKeys]);
+
+	const handleCategoryFilterChange = useCallback(
+		(keys: Key[] | null) => {
+			const incomingKeys = stringifyKeys(keys);
+			const specificKeys = incomingKeys.filter((key) =>
+				categoryOptionIdSet.has(key),
+			);
+			const hasAll = incomingKeys.includes(ALL_CATEGORY_FILTER_KEY);
+			let nextKeys: string[];
+
+			if (incomingKeys.length === 0) {
+				nextKeys = [ALL_CATEGORY_FILTER_KEY];
+			} else if (
+				hasAll &&
+				selectedCategoryKeys.includes(ALL_CATEGORY_FILTER_KEY) &&
+				specificKeys.length > 0
+			) {
+				nextKeys = specificKeys;
+			} else if (hasAll) {
+				nextKeys = [ALL_CATEGORY_FILTER_KEY];
+			} else {
+				nextKeys =
+					specificKeys.length > 0 ? specificKeys : [ALL_CATEGORY_FILTER_KEY];
+			}
+
+			if (areStringArraysEqual(selectedCategoryKeys, nextKeys)) return;
+			setSelectedCategoryKeys(nextKeys);
+			if (!runningRef.current) {
+				setStatus("idle");
+				resetProgress();
+			}
+		},
+		[categoryOptionIdSet, resetProgress, selectedCategoryKeys],
+	);
 
 	useEffect(() => {
 		if (sourceSignatureRef.current === allRowsSignature) return;
@@ -463,16 +614,29 @@ export function BatchOperationsEditor() {
 		queueRowsRef.current = allRows;
 		setQueueRows(allRows);
 		setSearch("");
+		setSelectedCategoryKeys([ALL_CATEGORY_FILTER_KEY]);
 		setStatus("idle");
 		resetProgress();
 	};
 
+	const getScopedRows = useCallback(
+		(rows: BatchSiteRow[]) => {
+			if (!activeCategoryIdSet) return rows;
+			return rows.filter((row) => activeCategoryIdSet.has(row.categoryId));
+		},
+		[activeCategoryIdSet],
+	);
+
 	const runBatch = useCallback(
 		async (resetBeforeRun: boolean) => {
 			if (runningRef.current) return;
-			const currentQueue = queueRowsRef.current;
+			const currentQueue = getScopedRows(queueRowsRef.current);
 			if (currentQueue.length === 0) {
-				toast.warning("待更新列表为空");
+				toast.warning(
+					isAllCategoriesSelected
+						? "待更新列表为空"
+						: "当前分类筛选下没有待更新网址",
+				);
 				return;
 			}
 			if (selectedUpdateFields.length === 0) {
@@ -488,7 +652,7 @@ export function BatchOperationsEditor() {
 				resetProgress();
 			}
 
-			const rows = queueRowsRef.current;
+			const rows = getScopedRows(queueRowsRef.current);
 			let cursor = 0;
 
 			const consumeNextRow = () => {
@@ -527,7 +691,11 @@ export function BatchOperationsEditor() {
 						const { patch } = await fetchWebsitePatch(
 							row.url,
 							selectedUpdateFields,
-							requestAbort.signal,
+							{
+								signal: requestAbort.signal,
+								existingIconUrl: row.icon,
+								existingPreviewUrl: row.previewImage,
+							},
 						);
 						const patched = applyPatch(row, patch);
 						if (!patched) {
@@ -577,6 +745,8 @@ export function BatchOperationsEditor() {
 		[
 			applyPatch,
 			concurrency,
+			getScopedRows,
+			isAllCategoriesSelected,
 			resetProgress,
 			selectedUpdateFields,
 			setRowError,
@@ -594,7 +764,11 @@ export function BatchOperationsEditor() {
 		setStatus("pausing");
 	};
 
-	const total = queueRows.length;
+	const scopedQueueRows = useMemo(
+		() => getScopedRows(queueRows),
+		[getScopedRows, queueRows],
+	);
+	const total = scopedQueueRows.length;
 	const removedCount = Math.max(allRows.length - queueRows.length, 0);
 	const isRunning = status === "running" || status === "pausing";
 	const canEditQueue = status === "idle" || status === "paused";
@@ -602,27 +776,17 @@ export function BatchOperationsEditor() {
 
 	const filteredRows = useMemo(() => {
 		const q = search.trim().toLowerCase();
-		if (!q) return queueRows;
-		return queueRows.filter(
+		if (!q) return scopedQueueRows;
+		return scopedQueueRows.filter(
 			(row) =>
 				row.title.toLowerCase().includes(q) ||
 				row.url.toLowerCase().includes(q) ||
 				row.categoryPath.toLowerCase().includes(q),
 		);
-	}, [queueRows, search]);
+	}, [scopedQueueRows, search]);
 
 	if (!isClientReady) {
-		return (
-			<div
-				className="flex flex-col items-center justify-center gap-2"
-				style={{
-					height: `calc(100dvh - 106px)`,
-				}}
-			>
-				<Spinner size="sm" />
-				<span className="text-xs text-default-500">加载中...</span>
-			</div>
-		);
+		return <Loading />;
 	}
 
 	return (
@@ -693,7 +857,7 @@ export function BatchOperationsEditor() {
 							onChange={setConcurrencyInput}
 							isDisabled={isRunning}
 						>
-							<Label className="text-default-500">并发：</Label>
+							<Label className="text-default-500 text-nowrap">并发：</Label>
 							<InputGroup className={"flex-1"}>
 								<InputGroup.Input
 									type="number"
@@ -803,20 +967,75 @@ export function BatchOperationsEditor() {
 							))}
 						</div>
 					</CheckboxGroup>
-					<div className="flex justify-end gap-2">
-						<TextField
-							className="w-full h-9"
-							value={search}
-							onChange={setSearch}
-						>
-							<Label className="sr-only">搜索待更新网址</Label>
-							<InputGroup>
-								<InputGroup.Prefix>
-									<BiSearch className="size-4 text-default-500" />
-								</InputGroup.Prefix>
-								<InputGroup.Input placeholder="搜索名称、网址或分类..." />
-							</InputGroup>
-						</TextField>
+					<div className="flex max-w-full items-center justify-start gap-2">
+						<div className="flex min-w-0 flex-1 items-center gap-2 sm:w-auto sm:flex-none">
+							<Select
+								className="min-w-0 flex-1 sm:w-56 sm:flex-none"
+								placeholder="全部分类"
+								selectionMode="multiple"
+								value={selectedCategoryKeys}
+								onChange={handleCategoryFilterChange}
+								isDisabled={isRunning || categoryOptions.length === 0}
+							>
+								<Label className="sr-only">筛选分类</Label>
+								<Select.Trigger className="h-9">
+									<Select.Value className="truncate">
+										{() => selectedCategoryLabel}
+									</Select.Value>
+									<Select.Indicator />
+								</Select.Trigger>
+								<Select.Popover>
+									<ListBox selectionMode="multiple">
+										<ListBox.Item
+											id={ALL_CATEGORY_FILTER_KEY}
+											textValue="全部分类"
+											className="pr-10"
+										>
+											<span className="flex min-w-0 flex-1 items-center gap-3">
+												<span className="truncate font-medium">全部分类</span>
+												<Chip size="sm">{queueRows.length}</Chip>
+											</span>
+											<ListBox.ItemIndicator />
+										</ListBox.Item>
+										{categoryOptions.map((option) => (
+											<ListBox.Item
+												key={option.id}
+												id={option.id}
+												textValue={option.path}
+												className="pr-10"
+											>
+												<span className="flex min-w-0 flex-1 items-center gap-3">
+													<span className="min-w-0 truncate">
+														{"　".repeat(option.level)}
+														{option.name}
+													</span>
+													<Chip size="sm">{option.siteCount}</Chip>
+												</span>
+												<ListBox.ItemIndicator />
+											</ListBox.Item>
+										))}
+									</ListBox>
+								</Select.Popover>
+							</Select>
+							<TextField
+								className="h-9 min-w-0 flex-1 sm:w-64 sm:flex-none"
+								value={search}
+								onChange={setSearch}
+							>
+								<Label className="sr-only">搜索待更新网址</Label>
+								<InputGroup>
+									<InputGroup.Prefix>
+										<BiSearch className="size-4 text-default-500" />
+									</InputGroup.Prefix>
+									<InputGroup.Input
+										placeholder="搜索名称、网址或分类..."
+										style={{
+											maxWidth: "calc(100% - 40px)",
+										}}
+									/>
+								</InputGroup>
+							</TextField>
+						</div>
 						<Button
 							variant="outline"
 							size="sm"
@@ -901,7 +1120,9 @@ export function BatchOperationsEditor() {
 										<div className="py-12 text-center text-sm text-default-500">
 											{queueRows.length === 0
 												? "待更新列表为空"
-												: "没有匹配的网址"}
+												: scopedQueueRows.length === 0
+													? "当前分类筛选下没有待更新网址"
+													: "没有匹配的网址"}
 										</div>
 									)}
 								>

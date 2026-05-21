@@ -26,7 +26,7 @@ export function BackupEditor() {
 		if (exporting) return;
 		setExporting(true);
 		try {
-			const res = await fetch("/api/backup", { method: "GET" });
+			const res = await fetch("/api/backup/", { method: "GET" });
 			if (!res.ok) {
 				const d = (await res.json().catch(() => ({}))) as { error?: string };
 				throw new Error(d.error || `导出失败 (${res.status})`);
@@ -60,7 +60,7 @@ export function BackupEditor() {
 		setImporting(true);
 		try {
 			const buf = await pickedFile.arrayBuffer();
-			const res = await fetch("/api/backup", {
+			const res = await fetch("/api/backup/", {
 				method: "POST",
 				headers: { "Content-Type": "application/zip" },
 				body: buf,
@@ -69,9 +69,17 @@ export function BackupEditor() {
 				const d = (await res.json().catch(() => ({}))) as { error?: string };
 				throw new Error(d.error || `还原失败 (${res.status})`);
 			}
+			const restored = (await res.json().catch(() => ({}))) as {
+				restored?: { disabledJsPlugins?: number };
+			};
 			setImportSuccess(true);
 			setPickedFile(null);
-			toast.success("数据已还原，页面即将刷新");
+			const disabledJsPlugins = restored.restored?.disabledJsPlugins ?? 0;
+			toast.success(
+				disabledJsPlugins > 0
+					? `数据已还原，已默认禁用 ${disabledJsPlugins} 个 JS 插件`
+					: "数据已还原，页面即将刷新",
+			);
 			setTimeout(() => {
 				window.location.reload();
 			}, 800);
@@ -86,7 +94,7 @@ export function BackupEditor() {
 		if (scanning || cleaning) return;
 		setScanning(true);
 		try {
-			const res = await fetch("/api/backup/cleanup", { method: "GET" });
+			const res = await fetch("/api/backup/cleanup/", { method: "GET" });
 			const d = (await res.json().catch(() => ({}))) as CleanupPreview & {
 				error?: string;
 			};
@@ -108,7 +116,7 @@ export function BackupEditor() {
 		if (cleaning) return;
 		setCleaning(true);
 		try {
-			const res = await fetch("/api/backup/cleanup", { method: "POST" });
+			const res = await fetch("/api/backup/cleanup/", { method: "POST" });
 			const d = (await res.json().catch(() => ({}))) as {
 				deletedCount?: number;
 				failed?: { name: string; error: string }[];
@@ -167,7 +175,7 @@ export function BackupEditor() {
 					<p className="text-xs text-gray-500 dark:text-neutral-400">
 						上传之前导出的备份 zip 压缩包，将直接覆盖
 						data/website.*、data/nav.* 与 data/uploads
-						目录下的对应文件
+						目录下的对应文件。导入的 JSON/YAML 会按当前 DATA_FILE_FORMAT 写回。
 					</p>
 				</div>
 
@@ -324,6 +332,7 @@ export function BackupEditor() {
 				<p className="mb-1.5 font-semibold">注意事项</p>
 				<ul className="list-disc list-inside space-y-1">
 					<li>导入还原会直接覆盖服务器上对应的数据文件，请谨慎操作</li>
+					<li>为避免导入不可信代码，备份中的 JS 插件会默认禁用</li>
 					<li>建议在导入前先导出一份当前数据的备份</li>
 					<li>导入成功后页面会自动刷新以加载最新数据</li>
 				</ul>

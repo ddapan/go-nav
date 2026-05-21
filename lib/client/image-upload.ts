@@ -67,7 +67,7 @@ export async function uploadImageWithCompression(
 	const form = new FormData();
 	form.append("file", prepared);
 
-	const res = await fetch("/api/upload", { method: "POST", body: form });
+	const res = await fetch("/api/upload/", { method: "POST", body: form });
 	if (!res.ok) {
 		const data = (await res.json().catch(() => ({}))) as { error?: string };
 		throw new Error(data.error || `上传失败 (${res.status})`);

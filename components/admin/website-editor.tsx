@@ -450,31 +450,43 @@ function LayoutEditor({
 		patch(next);
 	};
 
-	const toggleItems: {
+	const displayToggleItems: {
 		label: string;
 		key: keyof LayoutConfig;
 		disabled?: boolean;
 	}[] = [
 		{ label: "显示左侧侧边栏（桌面端）", key: "showSidebar" },
 		{ label: "显示搜索栏", key: "showSearch" },
+		{ label: "分类导航栏搜索", key: "showCategorySearch" },
 		{ label: "显示分类标题", key: "showCategoryTitle" },
 		{
 			label: "显示分类描述",
 			key: "showCategoryDescription",
 			disabled: !getLayoutValue("showCategoryTitle"),
 		},
+		{
+			label: "右侧使用 Tabs 切换二级分类",
+			key: "showSubcategoryTabs",
+		},
 		{ label: "显示页脚", key: "showFooter" },
+		{
+			label: "页脚显示二维码",
+			key: "showFooterQrCode",
+			disabled: !getLayoutValue("showFooter"),
+		},
 		{ label: "显示浮动操作按钮", key: "showFloatingActions" },
 		{
 			label: "浮动按钮显示二维码入口",
 			key: "showFloatingQrCode",
 			disabled: !getLayoutValue("showFloatingActions"),
 		},
-		{
-			label: "页脚显示二维码",
-			key: "showFooterQrCode",
-			disabled: !getLayoutValue("showFooter"),
-		},
+	];
+
+	const behaviorToggleItems: {
+		label: string;
+		key: keyof LayoutConfig;
+		disabled?: boolean;
+	}[] = [
 		{
 			label: "新标签页打开链接",
 			key: "linkTarget",
@@ -489,6 +501,114 @@ function LayoutEditor({
 		},
 	];
 
+	const spacingFields: {
+		label: string;
+		key: keyof LayoutConfig;
+		placeholder: string;
+	}[] = [
+		{
+			label: "内容区最大宽度",
+			key: "maxWidth",
+			placeholder: "1200px / 1400px / 100%",
+		},
+		{
+			label: "侧边栏宽度",
+			key: "sidebarWidth",
+			placeholder: "224px / 200px",
+		},
+		{
+			label: "内容区左侧内边距",
+			key: "contentPaddingLeft",
+			placeholder: "8px / 16px（有侧边栏时较小）",
+		},
+		{
+			label: "内容区右侧内边距",
+			key: "contentPaddingRight",
+			placeholder: "16px / 24px",
+		},
+		{
+			label: "分类间距",
+			key: "sectionGap",
+			placeholder: "16px / 24px",
+		},
+		{
+			label: "卡片网格内边距",
+			key: "cardGridPadding",
+			placeholder: "8px / 12px",
+		},
+	];
+
+	const cardFields: {
+		label: string;
+		key: keyof LayoutConfig;
+		placeholder: string;
+	}[] = [
+		{
+			label: "网站卡片最小宽度",
+			key: "cardMinWidth",
+			placeholder: "160px / 200px",
+		},
+		{
+			label: "网站卡片高度",
+			key: "cardHeight",
+			placeholder: "64px / 72px",
+		},
+		{
+			label: "图标圆角",
+			key: "iconBorderRadius",
+			placeholder: "full / 12px / 8px",
+		},
+		{
+			label: "图标默认内间距",
+			key: "defaultIconPadding",
+			placeholder: "8 / 8px / 留空",
+		},
+	];
+
+	const renderToggleGroup = (
+		items: { label: string; key: keyof LayoutConfig; disabled?: boolean }[],
+	) => (
+		<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+			{items.map((item) => {
+				const cur = getToggleValue(item.key);
+				return (
+					<Switch
+						key={item.key}
+						isSelected={cur}
+						isDisabled={item.disabled}
+						onChange={(v) => patchToggle(item.key, v)}
+					>
+						<Switch.Control>
+							<Switch.Thumb />
+						</Switch.Control>
+						<Switch.Content>
+							<Label className="text-sm">{item.label}</Label>
+						</Switch.Content>
+					</Switch>
+				);
+			})}
+		</div>
+	);
+
+	const renderFieldGroup = (
+		items: { label: string; key: keyof LayoutConfig; placeholder: string }[],
+	) => (
+		<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+			{items.map((item) => (
+				<div key={item.key} className="flex flex-col gap-2">
+					<Label className="text-sm font-medium">{item.label}</Label>
+					<TextField
+						value={(l[item.key] as string | undefined) ?? ""}
+						onChange={(v) => patch({ [item.key]: v || undefined })}
+					>
+						<Label className="sr-only">{String(item.key)}</Label>
+						<Input placeholder={item.placeholder} />
+					</TextField>
+				</div>
+			))}
+		</div>
+	);
+
 	return (
 		<div className="flex flex-col gap-4">
 			<div>
@@ -500,139 +620,38 @@ function LayoutEditor({
 				</p>
 			</div>
 
-			<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-				<div className="flex flex-col gap-2">
-					<Label className="text-sm font-medium">内容区最大宽度</Label>
-					<TextField
-						value={l.maxWidth ?? ""}
-						onChange={(v) => patch({ maxWidth: v || undefined })}
-					>
-						<Label className="sr-only">maxWidth</Label>
-						<Input placeholder="1200px / 1400px / 100%" />
-					</TextField>
-				</div>
-
-				<div className="flex flex-col gap-2">
-					<Label className="text-sm font-medium">侧边栏宽度</Label>
-					<TextField
-						value={l.sidebarWidth ?? ""}
-						onChange={(v) => patch({ sidebarWidth: v || undefined })}
-					>
-						<Label className="sr-only">sidebarWidth</Label>
-						<Input placeholder="224px / 200px" />
-					</TextField>
-				</div>
-
-				<div className="flex flex-col gap-2">
-					<Label className="text-sm font-medium">内容区左侧内边距</Label>
-					<TextField
-						value={l.contentPaddingLeft ?? ""}
-						onChange={(v) => patch({ contentPaddingLeft: v || undefined })}
-					>
-						<Label className="sr-only">contentPaddingLeft</Label>
-						<Input placeholder="8px / 16px（有侧边栏时较小）" />
-					</TextField>
-				</div>
-
-				<div className="flex flex-col gap-2">
-					<Label className="text-sm font-medium">内容区右侧内边距</Label>
-					<TextField
-						value={l.contentPaddingRight ?? ""}
-						onChange={(v) => patch({ contentPaddingRight: v || undefined })}
-					>
-						<Label className="sr-only">contentPaddingRight</Label>
-						<Input placeholder="16px / 24px" />
-					</TextField>
-				</div>
-
-				<div className="flex flex-col gap-2">
-					<Label className="text-sm font-medium">网站卡片最小宽度</Label>
-					<TextField
-						value={l.cardMinWidth ?? ""}
-						onChange={(v) => patch({ cardMinWidth: v || undefined })}
-					>
-						<Label className="sr-only">cardMinWidth</Label>
-						<Input placeholder="160px / 200px" />
-					</TextField>
-				</div>
-
-				<div className="flex flex-col gap-2">
-					<Label className="text-sm font-medium">网站卡片高度</Label>
-					<TextField
-						value={l.cardHeight ?? ""}
-						onChange={(v) => patch({ cardHeight: v || undefined })}
-					>
-						<Label className="sr-only">cardHeight</Label>
-						<Input placeholder="64px / 72px" />
-					</TextField>
-				</div>
-
-				<div className="flex flex-col gap-2">
-					<Label className="text-sm font-medium">分类间距</Label>
-					<TextField
-						value={l.sectionGap ?? ""}
-						onChange={(v) => patch({ sectionGap: v || undefined })}
-					>
-						<Label className="sr-only">sectionGap</Label>
-						<Input placeholder="16px / 24px" />
-					</TextField>
-				</div>
-
-				<div className="flex flex-col gap-2">
-					<Label className="text-sm font-medium">卡片网格内边距</Label>
-					<TextField
-						value={l.cardGridPadding ?? ""}
-						onChange={(v) => patch({ cardGridPadding: v || undefined })}
-					>
-						<Label className="sr-only">cardGridPadding</Label>
-						<Input placeholder="8px / 12px" />
-					</TextField>
-				</div>
-
-				<div className="flex flex-col gap-2">
-					<Label className="text-sm font-medium">图标圆角</Label>
-					<TextField
-						value={l.iconBorderRadius ?? ""}
-						onChange={(v) => patch({ iconBorderRadius: v || undefined })}
-					>
-						<Label className="sr-only">iconBorderRadius</Label>
-						<Input placeholder="full / 12px / 8px" />
-					</TextField>
-				</div>
-
-				<div className="flex flex-col gap-2">
-					<Label className="text-sm font-medium">图标默认内间距</Label>
-					<TextField
-						value={l.defaultIconPadding ?? ""}
-						onChange={(v) => patch({ defaultIconPadding: v || undefined })}
-					>
-						<Label className="sr-only">defaultIconPadding</Label>
-						<Input placeholder="8 / 8px / 留空" />
-					</TextField>
-				</div>
+			<div className="space-y-3">
+				<h4 className="text-sm font-semibold text-gray-900 dark:text-neutral-100">
+					尺寸与间距
+				</h4>
+				{renderFieldGroup(spacingFields)}
 			</div>
 
 			<Separator />
 
-			<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-				{toggleItems.map((item) => {
-					const cur = getToggleValue(item.key);
-					return (
-						<Switch
-							key={item.key}
-							isSelected={cur}
-							isDisabled={item.disabled}
-							onChange={(v) => patchToggle(item.key, v)}
-						>
-							<Switch.Control>
-								<Switch.Thumb />
-							</Switch.Control>
-							<Switch.Content>
-								<Label className="text-sm">{item.label}</Label>
-							</Switch.Content>
-						</Switch>
-					);
-				})}
+			<div className="space-y-3">
+				<h4 className="text-sm font-semibold text-gray-900 dark:text-neutral-100">
+					卡片与图标
+				</h4>
+				{renderFieldGroup(cardFields)}
+			</div>
+
+			<Separator />
+
+			<div className="space-y-3">
+				<h4 className="text-sm font-semibold text-gray-900 dark:text-neutral-100">
+					显示项
+				</h4>
+				{renderToggleGroup(displayToggleItems)}
+			</div>
+
+			<Separator />
+
+			<div className="space-y-3">
+				<h4 className="text-sm font-semibold text-gray-900 dark:text-neutral-100">
+					行为项
+				</h4>
+				{renderToggleGroup(behaviorToggleItems)}
 			</div>
 		</div>
 	);

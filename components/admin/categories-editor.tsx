@@ -11,10 +11,8 @@ import {
 	AlertDialog,
 	Chip,
 	Select,
-	ListBox,
-	Spinner,
-	toast,
-	cn,
+	ListBox, toast,
+	cn
 } from "@heroui/react";
 import {
 	DndContext,
@@ -58,6 +56,7 @@ import { useAtom } from "jotai";
 import { categoriesAtom } from "@/lib/store/admin";
 import { getIconImageSrc } from "@/lib/icon";
 import { IconPicker } from "./icon-picker";
+import Loading from "./loading";
 
 interface CategoryFormState {
 	id: string;
@@ -427,17 +426,7 @@ export function CategoriesEditor() {
 	}, [value.categories]);
 
 	if (!isClientReady) {
-		return (
-			<div
-				className="flex flex-col items-center justify-center gap-2"
-				style={{
-					height: `calc(100dvh - 106px)`,
-				}}
-			>
-				<Spinner size="sm" />
-				<span className="text-xs text-default-500">加载中...</span>
-			</div>
-		);
+		return <Loading />;
 	}
 
 	const findCategoryPath = (

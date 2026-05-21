@@ -59,8 +59,12 @@ export interface LayoutConfig {
 	linkTarget?: "current" | "new";
 	/** 是否自动优先访问内网地址（可达时优先） */
 	autoUseIntranet?: boolean;
-	/** 点击网站卡片时是否先进入“网址详情页” */
+	/** 点击网站卡片时是否先进入"网址详情页" */
 	enableSiteDetailPage?: boolean;
+	/** 是否在右侧使用 Tabs 展示二级分类（开启时：左侧仅展示父级分类，右侧用 Tabs 切换二级分类；关闭时：左侧树形展示父子分类，右侧平铺所有分类卡片） */
+	showSubcategoryTabs?: boolean;
+	/** 是否显示分类导航栏搜索框（开启后在左侧导航顶部显示搜索框，输入后过滤分类） */
+	showCategorySearch?: boolean;
 }
 
 /**

@@ -90,6 +90,28 @@ export function resolveNavFilePathForWrite(): string {
 /** 上传图片目录（后台上传的文件落在这里） */
 export const UPLOADS_DIR = path.join(DATA_DIR, "uploads");
 
+/** 图床上传记录，用于远端图床按内容 MD5 复用已有路径 */
+export const IMAGE_HOST_ASSETS_FILE = path.join(DATA_DIR, "image-host-assets.json");
+
+/** 图床配置文件路径（读取优先当前写入格式，再 fallback 到其余格式） */
+export function resolveImageHostFilePathForRead(): string {
+	return (
+		resolveStructuredDataFile("image-host") ??
+		buildStructuredDataFile(
+			"image-host",
+			extensionByFormat(STRUCTURED_WRITE_FORMAT),
+		)
+	);
+}
+
+/** 图床配置文件路径（写入格式由 DATA_FILE_FORMAT 控制，默认 json） */
+export function resolveImageHostFilePathForWrite(): string {
+	return buildStructuredDataFile(
+		"image-host",
+		extensionByFormat(STRUCTURED_WRITE_FORMAT),
+	);
+}
+
 /** 远端同步配置文件路径（读取优先当前写入格式，再 fallback 到其余格式） */
 export function resolveSyncFilePathForRead(): string {
 	return (

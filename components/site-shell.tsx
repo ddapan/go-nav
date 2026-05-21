@@ -3,7 +3,7 @@ import { AppLayout } from "@/components/app-layout";
 import { SiteStoreProvider } from "@/lib/store/hydrate";
 import { getNav, getWebsiteData } from "@/lib/config";
 
-export function SiteShell({ detailSlug }: { detailSlug?: string }) {
+export function SiteShell() {
 	const websiteData = getWebsiteData();
 	const nav = getNav();
 	const plugins = (nav.plugins ?? [])
@@ -25,7 +25,7 @@ export function SiteShell({ detailSlug }: { detailSlug?: string }) {
 					dangerouslySetInnerHTML={{ __html: p.code }}
 				/>
 			))}
-			<AppLayout detailSlug={detailSlug} />
+			<AppLayout />
 			{jsPlugins.map((p) => (
 				<PluginScript key={p.id} plugin={p} />
 			))}

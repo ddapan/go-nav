@@ -1,8 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { usePathname } from "next/navigation";
 import { useAtomValue, useSetAtom } from "jotai";
-import { activeIdAtom, categoriesAtom } from "@/lib/store/site";
+import {
+	activeIdAtom,
+	categoriesAtom,
+	showSubcategoryTabsAtom,
+} from "@/lib/store/site";
 
 /** 滚动停止后再同步侧栏选中态，避免滚动过程中频繁改 selectedKeys */
 const SCROLL_END_DELAY = 140;
@@ -22,25 +27,51 @@ const jumpGuard = { scrolling: false };
  * 因此滚动带来的 activeId 更新不会重渲染调用者（通常是 AppLayout）。
  */
 export function useActiveSectionWriter() {
+	const pathname = usePathname();
 	const categories = useAtomValue(categoriesAtom);
+	const showSubcategoryTabs = useAtomValue(showSubcategoryTabsAtom);
 	const setActiveId = useSetAtom(activeIdAtom);
 	const scrollEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const lastScrollYRef = useRef(0);
 
-	const topIds = useMemo(() => categories.map((c) => c.id), [categories]);
+	const parentIds = useMemo(() => categories.map((c) => c.id), [categories]);
+
+	const trackedIds = useMemo(() => {
+		if (showSubcategoryTabs) {
+			return parentIds;
+		}
+		const ids: string[] = [];
+		const walk = (nodes: typeof categories) => {
+			for (const node of nodes) {
+				ids.push(node.id);
+				if (node.children && node.children.length > 0) {
+					walk(node.children);
+				}
+			}
+		};
+		walk(categories);
+		return ids;
+	}, [categories, parentIds, showSubcategoryTabs]);
 
 	useEffect(() => {
 		if (typeof window === "undefined") return;
-		if (topIds.length === 0) return;
+		if (pathname !== "/") return;
+		if (trackedIds.length === 0) return;
+
 		lastScrollYRef.current = window.scrollY;
-
-		const elements = topIds
-			.map((id) => document.getElementById(id))
-			.filter((el): el is HTMLElement => el !== null);
-
-		if (elements.length === 0) return;
+		const topIdSet = new Set(trackedIds);
+		const getElements = () => {
+			const main = document.querySelector("main");
+			if (!main) return [] as HTMLElement[];
+			return Array.from(
+				main.querySelectorAll<HTMLElement>(".category-anchor"),
+			).filter((el) => topIdSet.has(el.id));
+		};
 
 		const findActiveByPosition = () => {
+			const elements = getElements();
+			if (elements.length === 0) return;
+
 			const currentScrollY = window.scrollY;
 			const scrollingUp = currentScrollY < lastScrollYRef.current - 1;
 			lastScrollYRef.current = currentScrollY;
@@ -49,7 +80,7 @@ export function useActiveSectionWriter() {
 			const doc = document.documentElement;
 			const nearBottom =
 				currentScrollY + window.innerHeight >= doc.scrollHeight - 6;
-			if (nearBottom && !scrollingUp) {
+			if (nearBottom && !scrollingUp && currentScrollY > ACTIVE_TOP_OFFSET) {
 				const lastId = elements[elements.length - 1]?.id;
 				if (lastId) {
 					setActiveId((prev) => (prev === lastId ? prev : lastId));
@@ -86,33 +117,54 @@ export function useActiveSectionWriter() {
 			scrollEndTimerRef.current = setTimeout(flushActive, SCROLL_END_DELAY);
 		};
 
-		const rawHash = window.location.hash.startsWith("#")
-			? window.location.hash.slice(1)
-			: "";
-		let initialHashId = rawHash;
-		try {
-			initialHashId = decodeURIComponent(rawHash);
-		} catch {
-			initialHashId = rawHash;
-		}
+		const applyInitialState = () => {
+			const rawHash = window.location.hash.startsWith("#")
+				? window.location.hash.slice(1)
+				: "";
+			let initialHashId = rawHash;
+			try {
+				initialHashId = decodeURIComponent(rawHash);
+			} catch {
+				initialHashId = rawHash;
+			}
 
-		const hasInitialHashTarget =
-			initialHashId.length > 0 &&
-			elements.some((el) => el.id === initialHashId);
+			// 首页刷新且位于顶部时，默认选中第一个父级分类。
+			if (!rawHash && window.scrollY <= 8) {
+				const firstParentId = parentIds[0];
+				if (firstParentId) {
+					setActiveId((prev) => (prev === firstParentId ? prev : firstParentId));
+					return;
+				}
+			}
 
-		if (hasInitialHashTarget) {
-			setActiveId((prev) => (prev === initialHashId ? prev : initialHashId));
-			// 某些客户端跳转下 hash 定位时机会偏晚，主动补一次定位。
-			requestAnimationFrame(() => {
-				document
-					.getElementById(initialHashId)
-					?.scrollIntoView({ behavior: "auto", block: "start" });
-			});
-			if (scrollEndTimerRef.current) clearTimeout(scrollEndTimerRef.current);
-			scrollEndTimerRef.current = setTimeout(flushActive, SCROLL_END_DELAY * 2);
-		} else {
-			findActiveByPosition();
-		}
+			const hasInitialHashTarget =
+				initialHashId.length > 0 &&
+				getElements().some((el) => el.id === initialHashId);
+
+			if (hasInitialHashTarget) {
+				setActiveId((prev) => (prev === initialHashId ? prev : initialHashId));
+				// 某些客户端跳转下 hash 定位时机会偏晚，主动补一次定位。
+				requestAnimationFrame(() => {
+					getElements()
+						.find((el) => el.id === initialHashId)
+						?.scrollIntoView({ behavior: "auto", block: "start" });
+				});
+				if (scrollEndTimerRef.current) clearTimeout(scrollEndTimerRef.current);
+				scrollEndTimerRef.current = setTimeout(flushActive, SCROLL_END_DELAY * 2);
+			} else {
+				findActiveByPosition();
+			}
+		};
+
+		let bootstrapTimer: ReturnType<typeof setTimeout> | null = null;
+		const bootstrap = () => {
+			if (getElements().length === 0) {
+				bootstrapTimer = setTimeout(bootstrap, 80);
+				return;
+			}
+			applyInitialState();
+		};
+		bootstrap();
 
 		window.addEventListener("scroll", scheduleAfterScrollEnd, { passive: true });
 		window.addEventListener("resize", scheduleAfterScrollEnd, { passive: true });
@@ -121,9 +173,10 @@ export function useActiveSectionWriter() {
 			window.removeEventListener("scroll", scheduleAfterScrollEnd);
 			window.removeEventListener("resize", scheduleAfterScrollEnd);
 			if (scrollEndTimerRef.current) clearTimeout(scrollEndTimerRef.current);
+			if (bootstrapTimer) clearTimeout(bootstrapTimer);
 			if (rafId) cancelAnimationFrame(rafId);
 		};
-	}, [topIds, setActiveId]);
+	}, [parentIds, pathname, trackedIds, setActiveId]);
 }
 
 /**

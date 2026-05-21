@@ -1,6 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
-import { UPLOADS_DIR } from "@/lib/server/paths";
+import {
+	resolveNavFilePathForWrite,
+	resolveWebsiteFilePathForWrite,
+	UPLOADS_DIR,
+} from "@/lib/server/paths";
 import {
 	parseStructuredContent,
 	readNav,
@@ -11,8 +15,6 @@ import {
 } from "@/lib/server/store";
 import { createZip, parseZip, type ZipEntry } from "@/lib/server/zip";
 import type { NavConfig, WebsiteData } from "@/types";
-
-export const MAX_BACKUP_SIZE = 20 * 1024 * 1024;
 
 const ALLOWED_UPLOAD_EXTENSIONS = new Set([
 	".png",
@@ -25,13 +27,11 @@ const ALLOWED_UPLOAD_EXTENSIONS = new Set([
 ]);
 const WEBSITE_BACKUP_IMPORT_FILES = ["website.yaml", "website.yml", "website.json"] as const;
 const NAV_BACKUP_IMPORT_FILES = ["nav.yaml", "nav.yml", "nav.json"] as const;
-const WEBSITE_BACKUP_EXPORT_FILES = ["website.yaml", "website.json"] as const;
-const NAV_BACKUP_EXPORT_FILES = ["nav.yaml", "nav.json"] as const;
-
 export interface BackupRestoreResult {
 	website: boolean;
 	nav: boolean;
 	uploads: number;
+	disabledJsPlugins: number;
 }
 
 function safeUploadName(name: string): string | null {
@@ -74,8 +74,8 @@ export function createDataBackupZip(): Buffer {
 			name: "meta.json",
 			data: Buffer.from(JSON.stringify(meta, null, 2), "utf8"),
 		},
-		...collectStructuredBackupEntries("website", websiteData),
-		...collectStructuredBackupEntries("nav", nav),
+		createStructuredBackupEntry("website", websiteData),
+		createStructuredBackupEntry("nav", nav),
 		...readAllUploads(),
 	];
 	return createZip(entries);
@@ -95,6 +95,7 @@ export function restoreDataBackupZip(buf: Buffer): BackupRestoreResult {
 
 	let websiteData: WebsiteData | null = null;
 	let nav: NavConfig | null = null;
+	let disabledJsPlugins = 0;
 	const uploads: { name: string; data: Buffer }[] = [];
 	const websiteEntry = findBackupEntry(entries, WEBSITE_BACKUP_IMPORT_FILES);
 	const navEntry = findBackupEntry(entries, NAV_BACKUP_IMPORT_FILES);
@@ -118,6 +119,9 @@ export function restoreDataBackupZip(buf: Buffer): BackupRestoreResult {
 	if (navEntry) {
 		try {
 			nav = parseStructuredContent<NavConfig>(navEntry.data.toString("utf8"));
+			const result = disableJsPluginsForRestore(nav);
+			nav = result.nav;
+			disabledJsPlugins = result.disabled;
 		} catch {
 			throw new Error(`${navEntry.name} 解析失败`);
 		}
@@ -140,16 +144,20 @@ export function restoreDataBackupZip(buf: Buffer): BackupRestoreResult {
 		website: !!websiteData,
 		nav: !!nav,
 		uploads: uploads.length,
+		disabledJsPlugins,
 	};
 }
 
-function collectStructuredBackupEntries(
+function createStructuredBackupEntry(
 	baseName: "website" | "nav",
 	value: unknown,
-): ZipEntry[] {
-	const names =
-		baseName === "website" ? WEBSITE_BACKUP_EXPORT_FILES : NAV_BACKUP_EXPORT_FILES;
-	return names.map((name) => ({
+): ZipEntry {
+	const targetFile =
+		baseName === "website"
+			? resolveWebsiteFilePathForWrite()
+			: resolveNavFilePathForWrite();
+	const name = path.basename(targetFile);
+	return {
 		name,
 		data: Buffer.from(
 			name.endsWith(".json")
@@ -157,7 +165,23 @@ function collectStructuredBackupEntries(
 				: stringifyStructuredContent(value, `${baseName}.yaml`),
 			"utf8",
 		),
-	}));
+	};
+}
+
+export function disableJsPluginsForRestore(nav: NavConfig): {
+	nav: NavConfig;
+	disabled: number;
+} {
+	const plugins = nav.plugins ?? [];
+	let disabled = 0;
+	const nextPlugins = plugins.map((plugin) => {
+		if (plugin.type !== "js" || !plugin.enabled) return plugin;
+		disabled += 1;
+		return { ...plugin, enabled: false };
+	});
+	return disabled > 0
+		? { nav: { ...nav, plugins: nextPlugins }, disabled }
+		: { nav, disabled: 0 };
 }
 
 function findBackupEntry(

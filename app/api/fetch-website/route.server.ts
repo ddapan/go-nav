@@ -1,15 +1,14 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession } from "@/lib/server/auth";
+import {
+	fetchPublicResource,
+	normalizeHttpUrl,
+	readResponseBytes,
+} from "@/lib/server/fetch-utils";
 
-function createTimeoutSignal(ms: number) {
-	const controller = new AbortController();
-	const timer = setTimeout(() => controller.abort(), ms);
-	return {
-		signal: controller.signal,
-		cleanup: () => clearTimeout(timer),
-	};
-}
+const MAX_HTML_SIZE = 2 * 1024 * 1024;
+const REQUEST_TIMEOUT = 20_000;
 
 function extractPrimaryTitle(rawTitle: string): string {
 	const normalized = rawTitle.replace(/\s+/g, " ").trim();
@@ -36,28 +35,27 @@ export async function POST(req: Request) {
 			return NextResponse.json({ error: "缺少 url" }, { status: 400 });
 		}
 
-		const { signal: timeoutSignal, cleanup } = createTimeoutSignal(20_000);
-
 		let html: string;
 		try {
-			const res = await fetch(targetUrl, {
+			const target = normalizeHttpUrl(targetUrl);
+			const res = await fetchPublicResource(target, {
 				method: "GET",
-				signal: timeoutSignal,
+				timeoutMs: REQUEST_TIMEOUT,
+				maxBytes: MAX_HTML_SIZE,
 				headers: {
 					"User-Agent":
 						"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
 				},
 			});
-			cleanup();
 			if (!res.ok) {
 				return NextResponse.json(
 					{ error: `HTTP ${res.status}` },
 					{ status: 400 },
 				);
 			}
-			html = await res.text();
+			const bytes = await readResponseBytes(res, MAX_HTML_SIZE);
+			html = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
 		} catch (e) {
-			cleanup();
 			throw e;
 		}
 

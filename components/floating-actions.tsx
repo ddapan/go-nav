@@ -1,6 +1,6 @@
 "use client";
 import { AiOutlineQrcode } from "react-icons/ai";
-import { Button } from "@heroui/react";
+import { Button, toast } from "@heroui/react";
 import Image from "next/image";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useAtomValue } from "jotai";
@@ -111,10 +111,20 @@ export const FloatingActions = memo(function FloatingActions({
 	}, [supportsHover]);
 
 	const goToGithub = useCallback(() => {
-		window.open("https://github.com/dengxiwang/go-nav", "_blank", "noopener,noreferrer");
+		window.open(
+			"https://github.com/dengxiwang/go-nav",
+			"_blank",
+			"noopener,noreferrer",
+		);
 	}, []);
 	const toggleSiteLinkMode = useCallback(() => {
-		setStoredSiteLinkMode(siteLinkMode === "intranet" ? "public" : "intranet");
+		const nextMode = siteLinkMode === "intranet" ? "public" : "intranet";
+		setStoredSiteLinkMode(nextMode);
+		if (nextMode === "public") {
+			toast.info("已切换到公网模式");
+		} else {
+			toast("已切换到内网模式");
+		}
 	}, [siteLinkMode]);
 
 	const qrPanelOpenClass = showQrPanel
@@ -207,7 +217,12 @@ export const FloatingActions = memo(function FloatingActions({
 					onPress={toggleSiteLinkMode}
 				>
 					{siteLinkMode === "intranet" ? (
-						<svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="size-5">
+						<svg
+							viewBox="0 0 24 24"
+							fill="none"
+							aria-hidden="true"
+							className="size-5"
+						>
 							<circle cx="6" cy="18" r="2.2" fill="currentColor" />
 							<circle cx="12" cy="6" r="2.2" fill="currentColor" />
 							<circle cx="18" cy="18" r="2.2" fill="currentColor" />
@@ -219,8 +234,19 @@ export const FloatingActions = memo(function FloatingActions({
 							/>
 						</svg>
 					) : (
-						<svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="size-5">
-							<circle cx="12" cy="12" r="8.5" stroke="currentColor" strokeWidth="1.8" />
+						<svg
+							viewBox="0 0 24 24"
+							fill="none"
+							aria-hidden="true"
+							className="size-5"
+						>
+							<circle
+								cx="12"
+								cy="12"
+								r="8.5"
+								stroke="currentColor"
+								strokeWidth="1.8"
+							/>
 							<path
 								d="M3.8 12h16.4M12 3.8c2.3 2.2 3.6 5.1 3.6 8.2s-1.3 6-3.6 8.2c-2.3-2.2-3.6-5.1-3.6-8.2s1.3-6 3.6-8.2Z"
 								stroke="currentColor"

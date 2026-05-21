@@ -1,5 +1,6 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import type { LayoutConfig } from "@/types";
 
 export type SiteLinkMode = "intranet" | "public";
@@ -98,6 +99,14 @@ export function subscribeSiteLinkMode(listener: (mode: SiteLinkMode) => void) {
 		window.removeEventListener(MODE_EVENT_KEY, handleCustomEvent);
 		window.removeEventListener("storage", handleStorage);
 	};
+}
+
+export function useSiteLinkMode(): SiteLinkMode {
+	return useSyncExternalStore(
+		(onStoreChange) => subscribeSiteLinkMode(() => onStoreChange()),
+		getStoredSiteLinkMode,
+		() => "public",
+	);
 }
 
 async function isUrlReachable(url: string): Promise<boolean> {

@@ -8,10 +8,11 @@ import {
 	ColorSwatch,
 	ColorField,
 	Input,
+	InputGroup,
 	Label,
-	NumberField,
 	parseColor,
 	TextField,
+	toast,
 } from "@heroui/react";
 import type React from "react";
 import { useRef, useState } from "react";
@@ -56,18 +57,17 @@ export function IconPicker({
 }) {
 	const fileRef = useRef<HTMLInputElement>(null);
 	const [uploading, setUploading] = useState(false);
-	const [err, setErr] = useState<string | null>(null);
 	const resolvedIconPadding = resolveConfiguredValue(
 		iconPadding,
 		defaultIconPadding,
 	);
-	const parsedIconPadding =
-		resolvedIconPadding ? Number.parseFloat(resolvedIconPadding) : undefined;
+	const parsedIconPadding = resolvedIconPadding
+		? Number.parseFloat(resolvedIconPadding)
+		: undefined;
 	const pickerColor = parseSafeColor(bgColor);
 
 	const uploadFile = async (f: File) => {
 		setUploading(true);
-		setErr(null);
 		try {
 			const url = await uploadImageWithCompression(f, {
 				maxEdge: 512,
@@ -75,7 +75,7 @@ export function IconPicker({
 			});
 			onChange(url);
 		} catch (e) {
-			setErr((e as Error).message);
+			toast.danger((e as Error).message || "图标上传失败");
 		} finally {
 			setUploading(false);
 		}
@@ -91,8 +91,10 @@ export function IconPicker({
 	const onPasteImage = async (e: React.ClipboardEvent<HTMLInputElement>) => {
 		const file = e.clipboardData.items
 			? Array.from(e.clipboardData.items)
-				.find((item) => item.kind === "file" && item.type.startsWith("image/"))
-				?.getAsFile()
+					.find(
+						(item) => item.kind === "file" && item.type.startsWith("image/"),
+					)
+					?.getAsFile()
 			: null;
 		if (!file) return;
 		e.preventDefault();
@@ -105,12 +107,14 @@ export function IconPicker({
 		if (!imageSrc)
 			return <span className="text-xl leading-none text-center">{value}</span>;
 		// eslint-disable-next-line @next/next/no-img-element
-		return <img src={imageSrc} alt="" className="h-6 w-6 rounded object-contain" />;
+		return (
+			<img src={imageSrc} alt="" className="h-6 w-6 rounded object-contain" />
+		);
 	})();
 
 	return (
 		<div className="flex flex-col gap-1">
-			<div className="flex items-center gap-2">
+			<div className="flex items-center gap-2 flex-wrap">
 				<div
 					className="flex h-9 w-9 shrink-0 items-center justify-center rounded border"
 					style={{
@@ -120,7 +124,7 @@ export function IconPicker({
 				>
 					{preview ?? <span className="text-xs text-muted">空</span>}
 				</div>
-				<TextField className="flex-1" value={value ?? ""} onChange={onChange}>
+				<TextField value={value ?? ""} onChange={onChange}>
 					<Label className="sr-only">图标</Label>
 					<Input placeholder={placeholder} onPaste={onPasteImage} />
 				</TextField>
@@ -134,19 +138,15 @@ export function IconPicker({
 					{uploading ? "上传中..." : "上传"}
 				</Button>
 				{onIconPaddingChange && (
-					<NumberField
-						value={parsedIconPadding}
-						onChange={(v) => onIconPaddingChange(v == null ? "" : String(v))}
-						minValue={0}
-						maxValue={20}
+					<TextField
+						className="flex flex-row items-center"
+						value={parsedIconPadding == null ? "" : String(parsedIconPadding)}
+						onChange={onIconPaddingChange}
 					>
-						<Label className="sr-only">图标内边距</Label>
-						<NumberField.Group>
-							<NumberField.DecrementButton />
-							<NumberField.Input className="w-10" />
-							<NumberField.IncrementButton />
-						</NumberField.Group>
-					</NumberField>
+						<InputGroup>
+							<InputGroup.Input type="number" min={0} max={20} step={0.5} />
+						</InputGroup>
+					</TextField>
 				)}
 				{onBgColorChange && (
 					<ColorPicker
@@ -222,7 +222,6 @@ export function IconPicker({
 					onChange={onFileChosen}
 				/>
 			</div>
-			{err ? <span className="text-xs text-danger">{err}</span> : null}
 		</div>
 	);
 }

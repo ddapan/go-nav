@@ -1,9 +1,12 @@
 import fs from "node:fs";
+import { createHash } from "node:crypto";
 import path from "node:path";
 import {
 	listStructuredDataFileCandidates,
+	resolveNavFilePathForWrite,
 	resolveSyncFilePathForRead,
 	resolveSyncFilePathForWrite,
+	resolveWebsiteFilePathForWrite,
 	UPLOADS_DIR,
 } from "@/lib/server/paths";
 import {
@@ -18,7 +21,7 @@ import {
 } from "@/lib/server/store";
 import {
 	createDataBackupZip,
-	MAX_BACKUP_SIZE,
+	disableJsPluginsForRestore,
 	restoreDataBackupZip,
 	type BackupRestoreResult,
 } from "@/lib/server/backup";
@@ -31,9 +34,6 @@ const WEBDAV_BACKUP_FILE_PREFIX = "go-nav-data";
 const WEBDAV_BACKUP_FILE_SUFFIX = ".zip";
 const WEBSITE_SYNC_IMPORT_FILES = ["website.yaml", "website.yml", "website.json"] as const;
 const NAV_SYNC_IMPORT_FILES = ["nav.yaml", "nav.yml", "nav.json"] as const;
-const WEBSITE_SYNC_EXPORT_FILES = ["website.yaml", "website.json"] as const;
-const NAV_SYNC_EXPORT_FILES = ["nav.yaml", "nav.json"] as const;
-
 const ALLOWED_UPLOAD_EXTENSIONS = new Set([
 	".png",
 	".jpg",
@@ -292,8 +292,8 @@ function collectGitHubSyncFiles(baseDir: string): SyncFileEntry[] {
 	const websiteData = readWebsiteData();
 	const nav = readNav();
 	const files: SyncFileEntry[] = [
-		...collectStructuredSyncEntries(baseDir, "website", websiteData),
-		...collectStructuredSyncEntries(baseDir, "nav", nav),
+		collectStructuredSyncEntry(baseDir, "website", websiteData),
+		collectStructuredSyncEntry(baseDir, "nav", nav),
 	];
 
 	for (const upload of getUploadEntriesForSync()) {
@@ -306,25 +306,23 @@ function collectGitHubSyncFiles(baseDir: string): SyncFileEntry[] {
 	return files;
 }
 
-function collectStructuredSyncEntries(
+function collectStructuredSyncEntry(
 	baseDir: string,
 	baseName: "website" | "nav",
 	value: unknown,
-): SyncFileEntry[] {
-	const fileNames =
-		baseName === "website" ? WEBSITE_SYNC_EXPORT_FILES : NAV_SYNC_EXPORT_FILES;
-	const entries: SyncFileEntry[] = [];
-	for (const fileName of fileNames) {
-		const serialized =
-			fileName.endsWith(".json")
-				? JSON.stringify(value, null, 2)
-				: stringifyStructuredContent(value, `${baseName}.yaml`);
-		entries.push({
-			path: `${baseDir}/${fileName}`,
-			data: Buffer.from(serialized, "utf8"),
-		});
-	}
-	return entries;
+): SyncFileEntry {
+	const targetFile =
+		baseName === "website"
+			? resolveWebsiteFilePathForWrite()
+			: resolveNavFilePathForWrite();
+	const fileName = path.basename(targetFile);
+	const serialized = fileName.endsWith(".json")
+		? JSON.stringify(value, null, 2)
+		: stringifyStructuredContent(value, `${baseName}.yaml`);
+	return {
+		path: `${baseDir}/${fileName}`,
+		data: Buffer.from(serialized, "utf8"),
+	};
 }
 
 function pruneLegacySyncFiles(keepFile: string) {
@@ -480,9 +478,6 @@ export async function runDataSync(
 		} else if (action === "push") {
 			await logProgress("info", "正在打包本地备份数据...");
 			const zip = createDataBackupZip();
-			if (zip.length > MAX_BACKUP_SIZE) {
-				throw new Error("备份文件过大，当前远端同步最大支持 20MB");
-			}
 			await logProgress("info", `备份打包完成，大小 ${formatBytes(zip.length)}。`);
 			const remote = await pushToWebDav(config.webdav, zip);
 			result = {
@@ -497,9 +492,6 @@ export async function runDataSync(
 		} else {
 			await logProgress("info", "正在拉取远端 WebDAV 备份...");
 			const { remote, zip } = await pullFromWebDav(config.webdav, options.target);
-			if (zip.length > MAX_BACKUP_SIZE) {
-				throw new Error("远端备份文件过大，当前最大支持 20MB");
-			}
 			await logProgress("info", `拉取完成，大小 ${formatBytes(zip.length)}。`);
 			const restored = restoreDataBackupZip(zip);
 			result = {
@@ -540,6 +532,11 @@ function formatBytes(size: number): string {
 	if (size < 1024) return `${size} B`;
 	if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
 	return `${(size / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+function createGitBlobSha(data: Buffer): string {
+	const header = Buffer.from(`blob ${data.length}\u0000`, "utf8");
+	return createHash("sha1").update(header).update(data).digest("hex");
 }
 
 function parseGitHubRepo(input: string): GitHubRepoParts | null {
@@ -859,6 +856,7 @@ async function pushToGitHub(
 		"info",
 		`目标仓库 ${parts.owner}/${parts.repo}，分支 ${config.branch}，目录 ${baseDir}`,
 	);
+	const remote = `github:${parts.owner}/${parts.repo}@${config.branch}:${baseDir}/(website.yaml,website.json,nav.yaml,nav.json,uploads/*)`;
 	const files = collectGitHubSyncFiles(baseDir);
 	if (files.length === 0) {
 		throw new Error("没有可同步到 GitHub 的数据文件");
@@ -877,6 +875,7 @@ async function pushToGitHub(
 	}
 
 	const desiredPaths = new Set(files.map((file) => file.path));
+	const remoteFileShaByPath = new Map<string, string>();
 	let stalePaths: string[] = [];
 	if (pushBase.sourceBranch) {
 		await log?.(
@@ -889,13 +888,40 @@ async function pushToGitHub(
 			pushBase.sourceBranch,
 			config.token,
 		).catch(() => []);
-		stalePaths = existingFiles
-			.map((entry) => entry.path || "")
-			.filter((p) => p && !desiredPaths.has(p));
+		for (const entry of existingFiles) {
+			if (entry.type !== "file" || !entry.path || !entry.sha) continue;
+			remoteFileShaByPath.set(entry.path, entry.sha);
+		}
+		stalePaths = Array.from(remoteFileShaByPath.keys()).filter(
+			(remotePath) => !desiredPaths.has(remotePath),
+		);
 		if (stalePaths.length > 0) {
 			await log?.("info", `发现 ${stalePaths.length} 个远端冗余文件，稍后将删除。`);
 		}
 	}
+
+	const changedFiles = files.filter((file) => {
+		const remoteSha = remoteFileShaByPath.get(file.path);
+		if (!remoteSha) return true;
+		return remoteSha !== createGitBlobSha(file.data);
+	});
+	const uploadsPrefix = `${baseDir}/uploads/`;
+	const changedUploadCount = changedFiles.filter((file) =>
+		file.path.startsWith(uploadsPrefix),
+	).length;
+	const deletedUploadCount = stalePaths.filter((filePath) =>
+		filePath.startsWith(uploadsPrefix),
+	).length;
+	const changedConfigCount = changedFiles.length - changedUploadCount;
+	const deletedConfigCount = stalePaths.length - deletedUploadCount;
+	if (changedFiles.length === 0 && stalePaths.length === 0) {
+		await log?.("success", "远端数据与本地一致，无需生成新提交。");
+		return { remote, changed: false };
+	}
+	await log?.(
+		"info",
+		`本次将更新 ${changedFiles.length} 个文件（配置 ${changedConfigCount}、uploads ${changedUploadCount}），删除 ${stalePaths.length} 个文件（配置 ${deletedConfigCount}、uploads ${deletedUploadCount}）。`,
+	);
 
 	const apiBase = `https://api.github.com/repos/${parts.owner}/${parts.repo}`;
 	const tree: Array<{
@@ -905,11 +931,11 @@ async function pushToGitHub(
 		sha: string | null;
 	}> = [];
 
-	for (let i = 0; i < files.length; i++) {
-		const file = files[i];
+	for (let i = 0; i < changedFiles.length; i++) {
+		const file = changedFiles[i];
 		await log?.(
 			"info",
-			`上传文件 ${i + 1}/${files.length}: ${file.path} (${formatBytes(file.data.length)})`,
+			`上传文件 ${i + 1}/${changedFiles.length}: ${file.path} (${formatBytes(file.data.length)})`,
 		);
 		const blob = await githubFetch<GitHubCreateBlobResponse>(
 			`${apiBase}/git/blobs`,
@@ -955,7 +981,6 @@ async function pushToGitHub(
 		},
 	);
 
-	const remote = `github:${parts.owner}/${parts.repo}@${config.branch}:${baseDir}/(website.yaml,website.json,nav.yaml,nav.json,uploads/*)`;
 	if (pushBase.parentTreeSha && newTree.sha === pushBase.parentTreeSha) {
 		await log?.("success", "远端数据与本地一致，无需生成新提交。");
 		return { remote, changed: false };
@@ -1024,6 +1049,7 @@ async function pullFromGitHub(
 
 	let websiteData: WebsiteData;
 	let navData: NavConfig;
+	let disabledJsPlugins = 0;
 	try {
 		websiteData = parseStructuredContent<WebsiteData>(
 			websiteFile.data.toString("utf8"),
@@ -1033,6 +1059,9 @@ async function pullFromGitHub(
 	}
 	try {
 		navData = parseStructuredContent<NavConfig>(navFile.data.toString("utf8"));
+		const result = disableJsPluginsForRestore(navData);
+		navData = result.nav;
+		disabledJsPlugins = result.disabled;
 	} catch {
 		throw new Error(`GitHub 的 ${path.basename(navFile.path)} 解析失败`);
 	}
@@ -1075,6 +1104,7 @@ async function pullFromGitHub(
 			website: true,
 			nav: true,
 			uploads: uploadsCount,
+			disabledJsPlugins,
 		},
 	};
 }

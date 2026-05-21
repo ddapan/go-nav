@@ -5,7 +5,6 @@ import { SESSION_COOKIE, verifySession } from "@/lib/server/auth";
 import {
 	createBackupFileName,
 	createDataBackupZip,
-	MAX_BACKUP_SIZE,
 	restoreDataBackupZip,
 } from "@/lib/server/backup";
 
@@ -57,12 +56,6 @@ export async function POST(req: Request) {
 			return NextResponse.json(
 				{ error: "请上传备份 zip 文件" },
 				{ status: 400 },
-			);
-		}
-		if (ab.byteLength > MAX_BACKUP_SIZE) {
-			return NextResponse.json(
-				{ error: "备份文件过大 (最大 20MB)" },
-				{ status: 413 },
 			);
 		}
 		buf = Buffer.from(ab);

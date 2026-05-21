@@ -130,3 +130,27 @@ a[data-disabled] {
 :where(.dark) .search-field__group {
 	border: 1px solid var(--border) !important;
 }
+
+/* 同步日志：终端风格字体栈（英文等宽 + 中文友好回退） */
+.sync-log-terminal {
+	font-family:
+		"SF Mono",
+		"SFMono-Regular",
+		"Cascadia Mono",
+		"JetBrains Mono",
+		"Menlo",
+		"Monaco",
+		"Consolas",
+		"Liberation Mono",
+		"PingFang SC",
+		"Hiragino Sans GB",
+		"Microsoft YaHei",
+		monospace;
+	font-size: 13px;
+	line-height: 1.7;
+	letter-spacing: 0.01em;
+	font-variant-ligatures: none;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	text-rendering: optimizeLegibility;
+}

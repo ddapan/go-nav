@@ -38,12 +38,14 @@ export const AppSidebar = memo(function AppSidebar({
 				<CategorySidebar categories={categories} onItemClick={onItemClick} />
 			</div>
 
-			{showAds && ads.length > 0 && (
+			{showAds && ads.length > 0 ? (
 				<div className="shrink-0 p-2 pt-3">
 					<div className="rounded-xl border border-black/8 dark:border-white/10 bg-white dark:bg-zinc-800 p-2">
 						<AdBanner ads={ads} aspectRatio={adsAspectRatio} />
 					</div>
 				</div>
+			) : (
+				<div className="h-8" />
 			)}
 		</aside>
 	);

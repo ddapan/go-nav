@@ -2,14 +2,13 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession } from "@/lib/server/auth";
-import fs from "node:fs";
 import path from "node:path";
 import {
 	getStructuredFileFormat,
-	resolveWebsiteFilePathForRead,
 	resolveWebsiteFilePathForWrite,
 } from "@/lib/server/paths";
 import {
+	getConfigRevision,
 	parseStructuredContent,
 	readWebsiteData,
 	stringifyStructuredContent,
@@ -23,26 +22,23 @@ async function requireAuth(): Promise<boolean> {
 	return !!verifySession(token);
 }
 
+function buildSourceFilePayload(websiteData: WebsiteData) {
+	const targetFile = resolveWebsiteFilePathForWrite();
+	return {
+			content: stringifyStructuredContent(websiteData, targetFile),
+			fileName: path.basename(targetFile),
+			format: getStructuredFileFormat(targetFile),
+			revision: getConfigRevision(),
+		};
+}
+
 export async function GET() {
 	if (!(await requireAuth())) {
 		return NextResponse.json({ error: "未登录" }, { status: 401 });
 	}
 	try {
-		const sourceFile = resolveWebsiteFilePathForRead();
-		let content = "";
-		if (fs.existsSync(sourceFile)) {
-			content = fs.readFileSync(sourceFile, "utf-8");
-		} else {
-			content = stringifyStructuredContent(
-				readWebsiteData(),
-				resolveWebsiteFilePathForWrite(),
-			);
-		}
-		return NextResponse.json({
-			content,
-			fileName: path.basename(sourceFile),
-			format: getStructuredFileFormat(sourceFile),
-		});
+		const websiteData = readWebsiteData();
+		return NextResponse.json(buildSourceFilePayload(websiteData));
 	} catch (e) {
 		return NextResponse.json({ error: (e as Error).message }, { status: 500 });
 	}
@@ -75,17 +71,11 @@ export async function PUT(req: Request) {
 			return NextResponse.json({ error: "配置内容无效" }, { status: 400 });
 		}
 		writeWebsiteData(websiteData);
-		const sourceFile = resolveWebsiteFilePathForRead();
-		const content = fs.existsSync(sourceFile)
-			? fs.readFileSync(sourceFile, "utf-8")
-			: stringifyStructuredContent(websiteData, resolveWebsiteFilePathForWrite());
 		revalidatePath("/");
 		return NextResponse.json({
 			ok: true,
 			websiteData,
-			content,
-			fileName: path.basename(sourceFile),
-			format: getStructuredFileFormat(sourceFile),
+			...buildSourceFilePayload(websiteData),
 		});
 	} catch (e) {
 		return NextResponse.json({ error: (e as Error).message }, { status: 500 });
