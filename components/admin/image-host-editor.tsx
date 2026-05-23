@@ -15,6 +15,7 @@ import {
 	TextField,
 	toast,
 } from "@heroui/react";
+import { useAtom } from "jotai";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
 	BiCheckCircle,
@@ -24,6 +25,7 @@ import {
 	BiSave,
 	BiXCircle,
 } from "react-icons/bi";
+import { navAtom } from "@/lib/store/admin";
 
 type ImageHostMode = "local" | "webdav" | "github" | "s3" | "oss" | "multi";
 type ImageHostReturnUrlMode = "relative" | "absolute";
@@ -194,6 +196,7 @@ function buildGitHubRawPrefix(repo: string, branch: string): string {
 }
 
 export function ImageHostEditor() {
+	const [nav, setNav] = useAtom(navAtom);
 	const [draft, setDraft] = useState<ImageHostDraft>(DEFAULT_DRAFT);
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
@@ -717,6 +720,42 @@ export function ImageHostEditor() {
 							</Card.Content>
 						</Card>
 
+						<Card variant="secondary" className="gap-4">
+							<Card.Header>
+								<Card.Title>上传格式处理</Card.Title>
+								<Card.Description>
+									控制图片上传时的统一转码策略。
+								</Card.Description>
+							</Card.Header>
+							<Card.Content className="flex flex-col gap-3">
+								<Switch
+									isSelected={nav.imageUpload?.convertToWebp === true}
+									onChange={(selected) =>
+										setNav({
+											...nav,
+											imageUpload: {
+												...(nav.imageUpload ?? {}),
+												convertToWebp: selected,
+											},
+										})
+									}
+								>
+									<Switch.Control>
+										<Switch.Thumb />
+									</Switch.Control>
+									<Switch.Content>
+										<Label className="text-sm">
+											上传时尽量统一转换成 WebP
+										</Label>
+									</Switch.Content>
+								</Switch>
+								<p className="text-xs text-default-500">
+									开启后，PNG / JPG / WebP / SVG 会优先转成 WebP 再保存；自动抓取
+									favicon 时也会遵守这个设置。这个开关属于站点全局配置，请点击顶部保存按钮生效。
+								</p>
+							</Card.Content>
+						</Card>
+
 						<div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-300">
 							<p className="mb-1.5 font-semibold">上传策略说明</p>
 							<ul className="list-disc list-inside space-y-1">
@@ -725,8 +764,8 @@ export function ImageHostEditor() {
 									MD5。若检测到相同文件，默认直接返回已存在路径，不重复上传。
 								</li>
 								<li className="mt-1">
-									图片格式和压缩采用固定智能策略：仅对可安全重编码的位图做压缩优化，SVG
-									等格式保持原样。
+									图片格式和压缩采用固定智能策略：默认仅对可安全重编码的格式做压缩优化；若开启上面的
+									WebP 统一转换，SVG 等可转换格式也会按设置处理。
 								</li>
 								<li className="mt-1">
 									在多图床策略下，如果某个图床缺失该文件，会自动补传缺失端，并继续复用同一路径。

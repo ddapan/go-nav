@@ -6,6 +6,7 @@ import {
 	readResponseBytes,
 } from "@/lib/server/fetch-utils";
 import { saveImageAsset } from "@/lib/server/image-hosting";
+import { readNav } from "@/lib/server/store";
 
 const MAX_UPLOAD_SIZE = 2 * 1024 * 1024;
 const REQUEST_TIMEOUT = 15_000;
@@ -75,10 +76,12 @@ export async function POST(req: Request) {
 			return NextResponse.json({ error: "图标过大（最大 2MB）" }, { status: 413 });
 		}
 
+		const convertToWebp = readNav().imageUpload?.convertToWebp === true;
 		const url = await saveImageAsset(`favicon${ext}`, bytes, {
 			dedupeByContent: true,
 			preferredExistingUrl: body.existingIconUrl,
 			contentType: contentTypeFromExt(ext),
+			forceWebp: convertToWebp,
 		});
 		return NextResponse.json({ url });
 	} catch (e) {

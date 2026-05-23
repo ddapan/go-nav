@@ -95,6 +95,7 @@ export interface ImageHostConfigInput {
 
 export interface SaveImageAssetOptions extends SaveUploadOptions {
 	contentType?: string;
+	forceWebp?: boolean;
 }
 
 interface GitHubRepoParts {
@@ -547,11 +548,15 @@ async function prepareImageAsset(
 	fileName: string,
 	bytes: Buffer,
 	contentType: string | undefined,
+	forceWebp?: boolean,
 ): Promise<PreparedImageAsset> {
 	const sourceExt = inferSourceExtension(fileName, contentType);
 	const sourceMime = contentTypeFromExtension(sourceExt, contentType);
+	const shouldConvertToWebp =
+		forceWebp === true &&
+		[".jpg", ".png", ".webp", ".svg"].includes(sourceExt);
 	// 固定智能策略：仅对可安全重编码的位图执行有损/无损压缩，其它格式保持原样。
-	if (![".jpg", ".png", ".webp"].includes(sourceExt)) {
+	if (!shouldConvertToWebp && ![".jpg", ".png", ".webp"].includes(sourceExt)) {
 		return { bytes, ext: sourceExt, contentType: sourceMime };
 	}
 
@@ -560,7 +565,9 @@ async function prepareImageAsset(
 		let pipeline = sharpMod(bytes, { failOn: "none" }).rotate();
 		const quality = 82;
 
-		if (sourceExt === ".webp") {
+		if (shouldConvertToWebp) {
+			pipeline = pipeline.webp({ quality, effort: 4 });
+		} else if (sourceExt === ".webp") {
 			pipeline = pipeline.webp({ quality, effort: 4 });
 		} else if (sourceExt === ".jpg") {
 			pipeline = pipeline.jpeg({ quality, mozjpeg: true });
@@ -571,14 +578,16 @@ async function prepareImageAsset(
 		}
 
 		const converted = await pipeline.toBuffer();
-		if (converted.length >= bytes.length * 0.98) {
+		if (!shouldConvertToWebp && converted.length >= bytes.length * 0.98) {
 			return { bytes, ext: sourceExt, contentType: sourceMime };
 		}
 
 		return {
 			bytes: converted,
-			ext: sourceExt,
-			contentType: contentTypeFromExtension(sourceExt, sourceMime),
+			ext: shouldConvertToWebp ? ".webp" : sourceExt,
+			contentType: shouldConvertToWebp
+				? "image/webp"
+				: contentTypeFromExtension(sourceExt, sourceMime),
 		};
 	} catch (e) {
 		console.warn(`[image-host] 图片压缩失败，回退原图：${(e as Error).message}`);
@@ -1258,16 +1267,22 @@ export async function saveImageAsset(
 	options?: SaveImageAssetOptions,
 ): Promise<string> {
 	const config = readImageHostConfig();
-	if (config.mode === "local") {
-		return saveUpload(fileName, bytes, options);
-	}
-
-	assertRemoteReady(config);
 	const asset = await prepareImageAsset(
 		fileName,
 		bytes,
 		options?.contentType,
+		options?.forceWebp,
 	);
+	const preparedFileName = `${path.basename(
+		fileName,
+		path.extname(fileName),
+	)}${asset.ext}`;
+
+	if (config.mode === "local") {
+		return saveUpload(preparedFileName, asset.bytes, options);
+	}
+
+	assertRemoteReady(config);
 	const remotePath = buildRemoteAssetPath(config, asset.ext);
 	const providers = providersForMode(config);
 	const assetMd5 = createAssetMd5(asset.bytes);

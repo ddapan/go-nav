@@ -498,6 +498,7 @@ function PreviewImagePicker({
 }) {
 	const fileRef = useRef<HTMLInputElement>(null);
 	const [uploading, setUploading] = useState(false);
+	const nav = useAtomValue(navAtom);
 
 	const onFileChosen = async (e: React.ChangeEvent<HTMLInputElement>) => {
 		const f = e.target.files?.[0];
@@ -512,6 +513,7 @@ function PreviewImagePicker({
 			const url = await uploadImageWithCompression(f, {
 				maxEdge: 1600,
 				quality: 0.84,
+				forceWebp: nav.imageUpload?.convertToWebp === true,
 			});
 			onChange(url);
 		} catch (e) {

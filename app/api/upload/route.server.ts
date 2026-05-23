@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession } from "@/lib/server/auth";
 import { saveImageAsset } from "@/lib/server/image-hosting";
+import { readNav } from "@/lib/server/store";
 
 const MAX_UPLOAD_SIZE = 2 * 1024 * 1024;
 const ALLOWED_UPLOAD_TYPES = new Map([
@@ -63,8 +64,10 @@ export async function POST(req: Request) {
 			);
 		}
 		const bytes = Buffer.from(await file.arrayBuffer());
+		const convertToWebp = readNav().imageUpload?.convertToWebp === true;
 		const url = await saveImageAsset(originalName, bytes, {
 			contentType: file.type,
+			forceWebp: convertToWebp,
 		});
 		return NextResponse.json({ url });
 	} catch (e) {

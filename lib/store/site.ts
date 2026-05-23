@@ -7,6 +7,7 @@
 import { atom } from "jotai";
 import type { Key } from "@heroui/react";
 import type { LayoutConfig, NavCategory, NavConfig, NavSite, WebsiteData } from "@/types";
+import { pluginHasRenderablePayload } from "@/lib/plugin-config";
 
 /** 站点默认布局配置，和原 AppLayout 中保持一致 */
 export const DEFAULT_LAYOUT: Required<LayoutConfig> = {
@@ -59,6 +60,9 @@ const EMPTY_NAV: NavConfig = {
 		engines: [],
 	},
 	ads: [],
+	imageUpload: {
+		convertToWebp: false,
+	},
 };
 
 // ─── 根原子（只读） ──────────────────────────────────────────────────────
@@ -144,7 +148,7 @@ export const showCategorySearchAtom = atom(
 export const enabledPluginsAtom = atom((get) => {
 	const plugins = get(siteNavAtom).plugins ?? [];
 	return plugins
-		.filter((p) => p.enabled && typeof p.code === "string" && p.code.length > 0)
+		.filter(pluginHasRenderablePayload)
 		.sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
 });
 

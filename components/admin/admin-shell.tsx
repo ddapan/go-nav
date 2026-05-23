@@ -159,7 +159,7 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
 				key: "plugins",
 				label: "插件管理",
 				icon: <BiCode className="size-5" />,
-				desc: "自定义 CSS / JS 注入",
+				desc: "CSS / 资源提示 / 脚本注入",
 			},
 		],
 	},
