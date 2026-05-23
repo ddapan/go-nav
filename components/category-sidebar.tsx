@@ -226,8 +226,12 @@ export const CategorySidebar = memo(function CategorySidebar({
 	}, [selectedId]);
 
 	useEffect(() => {
-		setSearchHighlightIndex(-1);
-	}, [searchQuery]);
+		if (!showCategorySearch || !searchQuery.trim()) {
+			setSearchHighlightIndex(-1);
+			return;
+		}
+		setSearchHighlightIndex(filteredCategories.length > 0 ? 0 : -1);
+	}, [filteredCategories.length, searchQuery, showCategorySearch]);
 
 	useEffect(() => {
 		if (searchHighlightIndex < 0 || !listRef.current) return;

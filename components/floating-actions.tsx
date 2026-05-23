@@ -17,6 +17,7 @@ import {
 	subscribeSiteLinkMode,
 	type SiteLinkMode,
 } from "@/lib/client/site-link";
+import { FLOATING_ACTION_TRANSITION_CLASS } from "./ui/ui.constants";
 
 /**
  * 悬浮按钮（Jotai 订阅版）：
@@ -134,7 +135,7 @@ export const FloatingActions = memo(function FloatingActions({
 		? "[@media(hover:hover)]:group-hover:pointer-events-auto [@media(hover:hover)]:group-hover:translate-x-0 -mr-2 [@media(hover:hover)]:group-hover:opacity-100"
 		: "";
 	const qrPanelPositionClass =
-		"absolute bottom-0 right-[calc(100%+1.5rem)] z-10 translate-x-2 opacity-0 transition-all duration-200";
+		`absolute bottom-0 right-[calc(100%+1.5rem)] z-10 translate-x-2 opacity-0 ${FLOATING_ACTION_TRANSITION_CLASS} duration-200`;
 
 	return (
 		<div className="fixed bottom-8 right-6 z-50 flex flex-col items-center gap-3">
@@ -143,7 +144,7 @@ export const FloatingActions = memo(function FloatingActions({
 				isIconOnly
 				aria-label="回到顶部"
 				variant="tertiary"
-				className={`shadow bg-(--primary-foreground) rounded-full transition-all duration-300 [@media(hover:hover)]:hover:-translate-y-0.5 ${
+				className={`shadow bg-(--primary-foreground) rounded-full ${FLOATING_ACTION_TRANSITION_CLASS} duration-300 [@media(hover:hover)]:hover:-translate-y-0.5 ${
 					showTop
 						? "pointer-events-auto opacity-100"
 						: "pointer-events-none translate-y-2 opacity-0"
@@ -199,7 +200,7 @@ export const FloatingActions = memo(function FloatingActions({
 						aria-controls="floating-actions-qr-panel"
 						aria-expanded={showQrPanel}
 						variant="tertiary"
-						className="shadow bg-(--primary-foreground) rounded-full transition-all duration-300 [@media(hover:hover)]:hover:-translate-y-0.5"
+						className={`shadow bg-(--primary-foreground) rounded-full ${FLOATING_ACTION_TRANSITION_CLASS} duration-300 [@media(hover:hover)]:hover:-translate-y-0.5`}
 						onPress={toggleQrPanel}
 					>
 						<AiOutlineQrcode />
@@ -213,7 +214,7 @@ export const FloatingActions = memo(function FloatingActions({
 					aria-label={`当前${getSiteLinkModeLabel(siteLinkMode)}模式，点击切换`}
 					isIconOnly
 					variant="tertiary"
-					className="shadow bg-(--primary-foreground) rounded-full transition-all duration-300 [@media(hover:hover)]:hover:-translate-y-0.5"
+					className={`shadow bg-(--primary-foreground) rounded-full ${FLOATING_ACTION_TRANSITION_CLASS} duration-300 [@media(hover:hover)]:hover:-translate-y-0.5`}
 					onPress={toggleSiteLinkMode}
 				>
 					{siteLinkMode === "intranet" ? (
@@ -264,7 +265,7 @@ export const FloatingActions = memo(function FloatingActions({
 				isIconOnly
 				aria-label="打开项目 GitHub"
 				variant="tertiary"
-				className="shadow bg-(--primary-foreground) rounded-full transition-all duration-300 [@media(hover:hover)]:hover:-translate-y-0.5"
+				className={`shadow bg-(--primary-foreground) rounded-full ${FLOATING_ACTION_TRANSITION_CLASS} duration-300 [@media(hover:hover)]:hover:-translate-y-0.5`}
 				onPress={goToGithub}
 			>
 				<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">

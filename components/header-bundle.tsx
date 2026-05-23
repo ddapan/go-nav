@@ -4,8 +4,10 @@ import { useOverlayState, type Key } from "@heroui/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAtomValue } from "jotai";
 import { AppHeader } from "./app-header";
+import { CategorySidebar } from "./category-sidebar";
 import { EngineDrawer } from "./engine-drawer";
 import { MobileNavDrawer } from "./mobile-nav-drawer";
+import type { HeaderBranding, HeaderSearchModel } from "./header.types";
 import {
 	categoriesAtom,
 	flatSitesAtom,
@@ -22,45 +24,34 @@ import { useJumpToSection } from "@/hooks/use-active-section";
  * Jotai 订阅版：
  * - 顶层只订阅 name/logo；搜索关闭时不再构建 flatSites 搜索索引。
  * - 分类列表只在移动抽屉打开后订阅，降低 Header 的常驻客户端负担。
- * - drawerOpen / engineDrawerOpen / engineId 下沉在各自小组件中，
- *   它们变化不会牵连外层 AppLayout。
+ * - 抽屉状态和断点关闭逻辑都收敛在 Header 相关小组件内，
+ *   避免 AppLayout 被这类瞬时交互牵着一起重渲染。
  */
 export function HeaderBundle({ showSearch }: { showSearch: boolean }) {
 	const name = useAtomValue(navNameAtom);
 	const logo = useAtomValue(navLogoAtom);
 	const onNavigate = useJumpToSection();
-	const drawerState = useOverlayState();
+	const menuDrawerState = useResponsiveDrawerState(768);
+	const branding = useMemo<HeaderBranding>(
+		() => ({ name, logo }),
+		[name, logo],
+	);
 
-	// 断点切换时自动关闭抽屉
-	useEffect(() => {
-		if (!drawerState.isOpen) return;
-		const onResize = () => {
-			if (window.innerWidth >= 768) drawerState.close();
-		};
-		window.addEventListener("resize", onResize);
-		return () => window.removeEventListener("resize", onResize);
-	}, [drawerState]);
-
-	const openMenu = useCallback(() => drawerState.open(), [drawerState]);
+	const openMenu = useCallback(() => menuDrawerState.open(), [menuDrawerState]);
 
 	// 移动端导航点击后除了跳转还要关掉抽屉
 	const handleDrawerNavigate = useCallback(
 		(id: string) => {
 			onNavigate(id);
-			drawerState.close();
+			menuDrawerState.close();
 		},
-		[drawerState, onNavigate],
+		[menuDrawerState, onNavigate],
 	);
 
 	const header = showSearch ? (
-		<SearchHeader name={name} logo={logo} onMenuOpen={openMenu} />
+		<SearchHeader branding={branding} onMenuOpen={openMenu} />
 	) : (
-		<AppHeader
-			websiteName={name}
-			websiteLogo={logo}
-			onMenuOpen={openMenu}
-			showSearch={false}
-		/>
+		<AppHeader branding={branding} onMenuOpen={openMenu} />
 	);
 
 	return (
@@ -68,8 +59,8 @@ export function HeaderBundle({ showSearch }: { showSearch: boolean }) {
 			{header}
 
 			<MobileNavDrawerHost
-				open={drawerState.isOpen}
-				onOpenChange={drawerState.setOpen}
+				open={menuDrawerState.isOpen}
+				onOpenChange={menuDrawerState.setOpen}
 				onItemClick={handleDrawerNavigate}
 				title={name}
 				logo={logo}
@@ -91,59 +82,41 @@ function MobileNavDrawerHost({
 	title: string;
 	logo: string;
 }) {
-	if (!open) return null;
-
-	return (
-		<MobileNavDrawerContent
-			open={open}
-			onOpenChange={onOpenChange}
-			onItemClick={onItemClick}
-			title={title}
-			logo={logo}
-		/>
-	);
-}
-
-function MobileNavDrawerContent({
-	open,
-	onOpenChange,
-	onItemClick,
-	title,
-	logo,
-}: {
-	open: boolean;
-	onOpenChange: (open: boolean) => void;
-	onItemClick: (id: string) => void;
-	title: string;
-	logo: string;
-}) {
-	const categories = useAtomValue(categoriesAtom);
-
 	return (
 		<MobileNavDrawer
 			open={open}
 			onOpenChange={onOpenChange}
-			categories={categories}
-			onItemClick={onItemClick}
 			title={title}
 			logo={logo}
-		/>
+		>
+			{open ? (
+				<MobileNavDrawerContent onItemClick={onItemClick} />
+			) : null}
+		</MobileNavDrawer>
 	);
 }
 
+function MobileNavDrawerContent({
+	onItemClick,
+}: {
+	onItemClick: (id: string) => void;
+}) {
+	const categories = useAtomValue(categoriesAtom);
+
+	return <CategorySidebar categories={categories} onItemClick={onItemClick} />;
+}
+
 function SearchHeader({
-	name,
-	logo,
+	branding,
 	onMenuOpen,
 }: {
-	name: string;
-	logo: string;
+	branding: HeaderBranding;
 	onMenuOpen: () => void;
 }) {
 	const search = useAtomValue(searchConfigAtom);
 	const flatSites = useAtomValue(flatSitesAtom);
 	const layout = useAtomValue(layoutAtom);
-	const engineDrawerState = useOverlayState();
+	const engineDrawerState = useResponsiveDrawerState(480);
 
 	const engineOptions = useMemo(() => {
 		const base = search.enableLocalSearch
@@ -161,15 +134,6 @@ function SearchHeader({
 	const [engineId, setEngineId] = useState<Key | null>(resolvedDefaultEngine);
 
 	useEffect(() => {
-		if (!engineDrawerState.isOpen) return;
-		const onResize = () => {
-			if (window.innerWidth >= 480) engineDrawerState.close();
-		};
-		window.addEventListener("resize", onResize);
-		return () => window.removeEventListener("resize", onResize);
-	}, [engineDrawerState]);
-
-	useEffect(() => {
 		if (engineId !== null && engineOptions.includes(String(engineId))) return;
 		setEngineId(resolvedDefaultEngine);
 	}, [engineId, engineOptions, resolvedDefaultEngine]);
@@ -178,28 +142,43 @@ function SearchHeader({
 		() => engineDrawerState.open(),
 		[engineDrawerState],
 	);
-	const showEngineSelector = search.showEngineSelector !== false;
+	const searchModel = useMemo<HeaderSearchModel>(
+		() => ({
+			config: {
+				engines: search.engines,
+				defaultEngine: resolvedDefaultEngine ?? "",
+				enableLocal: search.enableLocalSearch,
+				enableSuggestion: search.enableSuggestion !== false,
+				enableTabFocus: search.enableTabFocus !== false,
+				placeholder: search.placeholder,
+				sites: flatSites,
+				showEngineSelector: search.showEngineSelector !== false,
+				layout,
+			},
+			engineState: {
+				value: engineId,
+				onChange: setEngineId,
+			},
+			onDrawerOpen: openEngineDrawer,
+		}),
+		[
+			engineId,
+			flatSites,
+			layout,
+			openEngineDrawer,
+			resolvedDefaultEngine,
+			search.enableLocalSearch,
+			search.enableSuggestion,
+			search.enableTabFocus,
+			search.engines,
+			search.placeholder,
+			search.showEngineSelector,
+		],
+	);
 
 	return (
 		<>
-			<AppHeader
-				websiteName={name}
-				websiteLogo={logo}
-				engines={search.engines}
-				defaultEngine={resolvedDefaultEngine ?? ""}
-				enableLocal={search.enableLocalSearch}
-				enableSuggestion={search.enableSuggestion !== false}
-				enableTabFocus={search.enableTabFocus !== false}
-				placeholder={search.placeholder}
-				sites={flatSites}
-				onMenuOpen={onMenuOpen}
-				engineId={engineId}
-				onEngineChange={setEngineId}
-				onEngineDrawerOpen={openEngineDrawer}
-				showSearch
-				showEngineSelector={showEngineSelector}
-				layout={layout}
-			/>
+			<AppHeader branding={branding} onMenuOpen={onMenuOpen} search={searchModel} />
 
 			<EngineDrawer
 				open={engineDrawerState.isOpen}
@@ -211,4 +190,20 @@ function SearchHeader({
 			/>
 		</>
 	);
+}
+
+function useResponsiveDrawerState(closeAtMinWidth: number) {
+	const drawerState = useOverlayState();
+
+	useEffect(() => {
+		const media = window.matchMedia(`(min-width: ${closeAtMinWidth}px)`);
+		const onChange = (event: MediaQueryListEvent) => {
+			if (event.matches) drawerState.close();
+		};
+
+		media.addEventListener("change", onChange);
+		return () => media.removeEventListener("change", onChange);
+	}, [closeAtMinWidth, drawerState]);
+
+	return drawerState;
 }

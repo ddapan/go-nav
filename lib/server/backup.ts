@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { isExecutablePlugin } from "@/lib/plugin-config";
 import {
 	resolveNavFilePathForWrite,
 	resolveWebsiteFilePathForWrite,
@@ -175,7 +176,7 @@ export function disableJsPluginsForRestore(nav: NavConfig): {
 	const plugins = nav.plugins ?? [];
 	let disabled = 0;
 	const nextPlugins = plugins.map((plugin) => {
-		if (plugin.type !== "js" || !plugin.enabled) return plugin;
+		if (!isExecutablePlugin(plugin) || !plugin.enabled) return plugin;
 		disabled += 1;
 		return { ...plugin, enabled: false };
 	});

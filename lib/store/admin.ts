@@ -40,6 +40,9 @@ const EMPTY_NAV: NavConfig = {
 		engines: [],
 	},
 	ads: [],
+	imageUpload: {
+		convertToWebp: false,
+	},
 };
 
 // ─── 根原子 ──────────────────────────────────────────────────────────────

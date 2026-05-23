@@ -77,7 +77,7 @@ export function BackupEditor() {
 			const disabledJsPlugins = restored.restored?.disabledJsPlugins ?? 0;
 			toast.success(
 				disabledJsPlugins > 0
-					? `数据已还原，已默认禁用 ${disabledJsPlugins} 个 JS 插件`
+					? `数据已还原，已默认禁用 ${disabledJsPlugins} 个脚本类插件`
 					: "数据已还原，页面即将刷新",
 			);
 			setTimeout(() => {
@@ -332,7 +332,7 @@ export function BackupEditor() {
 				<p className="mb-1.5 font-semibold">注意事项</p>
 				<ul className="list-disc list-inside space-y-1">
 					<li>导入还原会直接覆盖服务器上对应的数据文件，请谨慎操作</li>
-					<li>为避免导入不可信代码，备份中的 JS 插件会默认禁用</li>
+					<li>为避免导入不可信代码，备份中的脚本类插件会默认禁用</li>
 					<li>建议在导入前先导出一份当前数据的备份</li>
 					<li>导入成功后页面会自动刷新以加载最新数据</li>
 				</ul>

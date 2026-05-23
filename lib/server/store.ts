@@ -92,6 +92,9 @@ export const DEFAULT_NAV: NavConfig = {
 			enabled: true,
 		},
 	],
+	imageUpload: {
+		convertToWebp: false,
+	},
 	plugins: [],
 	layout: {
 		maxWidth: "1400",

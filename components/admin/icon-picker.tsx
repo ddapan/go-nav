@@ -14,10 +14,12 @@ import {
 	TextField,
 	toast,
 } from "@heroui/react";
+import { useAtomValue } from "jotai";
 import type React from "react";
 import { useRef, useState } from "react";
 import { getIconImageSrc } from "@/lib/icon";
 import { uploadImageWithCompression } from "@/lib/client/image-upload";
+import { navAtom } from "@/lib/store/admin";
 import { resolveConfiguredValue, toPx } from "../site-icon";
 
 const TRANSPARENT_BG_COLOR = "rgba(255, 255, 255, 0)";
@@ -57,6 +59,7 @@ export function IconPicker({
 }) {
 	const fileRef = useRef<HTMLInputElement>(null);
 	const [uploading, setUploading] = useState(false);
+	const nav = useAtomValue(navAtom);
 	const resolvedIconPadding = resolveConfiguredValue(
 		iconPadding,
 		defaultIconPadding,
@@ -72,6 +75,7 @@ export function IconPicker({
 			const url = await uploadImageWithCompression(f, {
 				maxEdge: 512,
 				quality: 0.82,
+				forceWebp: nav.imageUpload?.convertToWebp === true,
 			});
 			onChange(url);
 		} catch (e) {
