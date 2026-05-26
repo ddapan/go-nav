@@ -4,12 +4,14 @@ const COMPRESSIBLE_TYPES = new Set([
 	"image/png",
 	"image/jpeg",
 	"image/webp",
+	"image/svg+xml",
 ]);
 
 export interface UploadImageOptions {
 	maxEdge: number;
 	quality: number;
 	minCompressBytes?: number;
+	forceWebp?: boolean;
 }
 
 function buildWebpName(fileName: string) {
@@ -24,7 +26,12 @@ async function compressImageIfNeeded(
 ): Promise<File> {
 	if (typeof window === "undefined") return file;
 	if (!COMPRESSIBLE_TYPES.has(file.type)) return file;
-	if (file.size < (options.minCompressBytes ?? 120 * 1024)) return file;
+	if (
+		!options.forceWebp &&
+		file.size < (options.minCompressBytes ?? 120 * 1024)
+	) {
+		return file;
+	}
 
 	let bitmap: ImageBitmap | null = null;
 	try {
@@ -50,7 +57,7 @@ async function compressImageIfNeeded(
 		const compressed = new File([blob], buildWebpName(file.name), {
 			type: "image/webp",
 		});
-		if (compressed.size >= file.size * 0.95) return file;
+		if (!options.forceWebp && compressed.size >= file.size * 0.95) return file;
 		return compressed;
 	} catch {
 		return file;
@@ -67,7 +74,7 @@ export async function uploadImageWithCompression(
 	const form = new FormData();
 	form.append("file", prepared);
 
-	const res = await fetch("/api/upload", { method: "POST", body: form });
+	const res = await fetch("/api/upload/", { method: "POST", body: form });
 	if (!res.ok) {
 		const data = (await res.json().catch(() => ({}))) as { error?: string };
 		throw new Error(data.error || `上传失败 (${res.status})`);

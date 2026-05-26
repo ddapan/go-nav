@@ -1,11 +1,10 @@
 import { cookies } from "next/headers";
-import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession } from "@/lib/server/auth";
+import { revalidateFrontendPaths } from "@/lib/server/revalidate-frontend";
 import {
 	createBackupFileName,
 	createDataBackupZip,
-	MAX_BACKUP_SIZE,
 	restoreDataBackupZip,
 } from "@/lib/server/backup";
 
@@ -59,12 +58,6 @@ export async function POST(req: Request) {
 				{ status: 400 },
 			);
 		}
-		if (ab.byteLength > MAX_BACKUP_SIZE) {
-			return NextResponse.json(
-				{ error: "备份文件过大 (最大 20MB)" },
-				{ status: 413 },
-			);
-		}
 		buf = Buffer.from(ab);
 	} catch {
 		return NextResponse.json({ error: "读取请求体失败" }, { status: 400 });
@@ -72,7 +65,7 @@ export async function POST(req: Request) {
 
 	try {
 		const restored = restoreDataBackupZip(buf);
-		revalidatePath("/");
+		revalidateFrontendPaths();
 		return NextResponse.json({
 			ok: true,
 			restored,

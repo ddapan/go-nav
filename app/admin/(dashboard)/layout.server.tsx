@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { SESSION_COOKIE, verifySession } from "@/lib/server/auth";
-import { readNav, readWebsiteData } from "@/lib/server/store";
+import { getConfigRevision, readNav, readWebsiteData } from "@/lib/server/store";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { AdminStoreProvider } from "@/lib/store/hydrate";
 
@@ -21,8 +21,9 @@ export default async function DashboardLayout({
 	}
 	const websiteData = readWebsiteData();
 	const nav = readNav();
+	const revision = getConfigRevision();
 	return (
-		<AdminStoreProvider initial={{ websiteData, nav }}>
+		<AdminStoreProvider initial={{ websiteData, nav, revision }}>
 			<AdminShell>{children}</AdminShell>
 		</AdminStoreProvider>
 	);

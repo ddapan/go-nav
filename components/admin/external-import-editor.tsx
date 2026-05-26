@@ -395,7 +395,7 @@ export function ExternalImportEditor() {
 					) : null}
 				</div>
 
-				<div className="flex flex-wrap items-center justify-end gap-2 border-t border-gray-100 px-5 py-4 dark:border-neutral-800">
+				<div className="flex flex-wrap items-center justify-end gap-2 px-5 pb-4">
 					<Button
 						variant="primary"
 						isPending={parsing}

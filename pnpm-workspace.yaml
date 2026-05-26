@@ -7,3 +7,7 @@ verifyDepsBeforeRun: false
 allowBuilds:
   sharp: true
   unrs-resolver: true
+
+minimumReleaseAgeExclude:
+  - '@uiw/codemirror-extensions-basic-setup@4.25.10'
+  - '@uiw/react-codemirror@4.25.10'

@@ -1,29 +1,22 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession } from "@/lib/server/auth";
-import { saveUpload } from "@/lib/server/store";
+import {
+	assertPublicHttpUrl,
+	fetchPublicResource,
+	normalizeHttpUrl,
+	readResponseBytes,
+} from "@/lib/server/fetch-utils";
+import { saveImageAsset } from "@/lib/server/image-hosting";
 
 const MAX_PREVIEW_SIZE = 8 * 1024 * 1024;
 const REQUEST_TIMEOUT = 35_000;
 const PREVIEW_MAX_WIDTH = 1280;
 const PREVIEW_MAX_HEIGHT = 900;
 
-function withTimeout(ms: number) {
-	const controller = new AbortController();
-	const timer = setTimeout(() => controller.abort(), ms);
-	return {
-		signal: controller.signal,
-		done: () => clearTimeout(timer),
-	};
-}
-
-function normalizeTargetUrl(raw: string): string {
-	const trimmed = raw.trim();
-	const candidate = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
-	const parsed = new URL(candidate);
-	if (!/^https?:$/i.test(parsed.protocol)) {
-		throw new Error("仅支持 http / https 地址");
-	}
+async function normalizeTargetUrl(raw: string): Promise<string> {
+	const parsed = normalizeHttpUrl(raw);
+	await assertPublicHttpUrl(parsed);
 	return parsed.toString();
 }
 
@@ -80,37 +73,32 @@ function buildScreenshotSources(targetUrl: string): string[] {
 }
 
 async function tryFetchImage(url: string) {
-	const { signal, done } = withTimeout(REQUEST_TIMEOUT);
-	try {
-		const res = await fetch(url, {
-			method: "GET",
-			signal,
-			headers: {
-				"User-Agent":
-					"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-			},
-		});
-		if (!res.ok) throw new Error(`HTTP ${res.status}`);
+	const res = await fetchPublicResource(url, {
+		method: "GET",
+		timeoutMs: REQUEST_TIMEOUT,
+		maxBytes: MAX_PREVIEW_SIZE,
+		headers: {
+			"User-Agent":
+				"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+		},
+	});
+	if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-		const contentType = res.headers.get("content-type") || "";
-		if (!contentType.toLowerCase().startsWith("image/")) {
-			throw new Error("返回结果不是图片");
-		}
-
-		const bytes = Buffer.from(await res.arrayBuffer());
-		if (bytes.length === 0) throw new Error("截图内容为空");
-		if (bytes.length > MAX_PREVIEW_SIZE) throw new Error("截图文件过大");
-
-		return { bytes, contentType };
-	} finally {
-		done();
+	const contentType = res.headers.get("content-type") || "";
+	if (!contentType.toLowerCase().startsWith("image/")) {
+		throw new Error("返回结果不是图片");
 	}
+
+	const bytes = await readResponseBytes(res, MAX_PREVIEW_SIZE);
+	if (bytes.length === 0) throw new Error("截图内容为空");
+
+	return { bytes, contentType };
 }
 
 /**
- * 自动获取网站首屏截图并保存到 uploads。
+ * 自动获取网站首屏截图并保存到当前配置的素材存储。
  * POST /api/tools/capturePreview
- * Body: { url: string }
+ * Body: { url: string, existingPreviewUrl?: string }
  */
 export async function POST(req: Request) {
 	const store = await cookies();
@@ -119,12 +107,15 @@ export async function POST(req: Request) {
 	}
 
 	try {
-		const body = (await req.json()) as { url?: string };
+		const body = (await req.json()) as {
+			url?: string;
+			existingPreviewUrl?: string;
+		};
 		if (!body?.url) {
 			return NextResponse.json({ error: "缺少 url" }, { status: 400 });
 		}
 
-		const targetUrl = normalizeTargetUrl(body.url);
+		const targetUrl = await normalizeTargetUrl(body.url);
 		const candidates = buildScreenshotSources(targetUrl);
 		let lastError = "截图失败";
 
@@ -136,9 +127,14 @@ export async function POST(req: Request) {
 				if (compressed.bytes.length > MAX_PREVIEW_SIZE) {
 					throw new Error("压缩后截图仍过大");
 				}
-				const url = saveUpload(
+				const url = await saveImageAsset(
 					`preview-${host}${compressed.ext}`,
 					compressed.bytes,
+					{
+						dedupeByContent: true,
+						preferredExistingUrl: body.existingPreviewUrl,
+						contentType: contentTypeFromExt(compressed.ext),
+					},
 				);
 				return NextResponse.json({ url });
 			} catch (e) {
@@ -153,4 +149,12 @@ export async function POST(req: Request) {
 	} catch (e) {
 		return NextResponse.json({ error: (e as Error).message }, { status: 500 });
 	}
+}
+
+function contentTypeFromExt(ext: string): string {
+	if (ext === ".svg") return "image/svg+xml";
+	if (ext === ".png") return "image/png";
+	if (ext === ".gif") return "image/gif";
+	if (ext === ".webp") return "image/webp";
+	return "image/jpeg";
 }

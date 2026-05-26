@@ -1,6 +1,6 @@
-import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { requireAdminAuth } from "@/lib/server/api-auth";
+import { revalidateFrontendPaths } from "@/lib/server/revalidate-frontend";
 import {
 	runDataSync,
 	type DataSyncProgressEvent,
@@ -78,7 +78,7 @@ export async function POST(req: Request) {
 						},
 					});
 					if (result.ok && action === "pull") {
-						revalidatePath("/");
+						revalidateFrontendPaths();
 					}
 					push({ type: "result", result });
 				};
@@ -112,7 +112,7 @@ export async function POST(req: Request) {
 		target: typeof body.target === "string" ? body.target : undefined,
 	});
 	if (result.ok && action === "pull") {
-		revalidatePath("/");
+		revalidateFrontendPaths();
 	}
 	return NextResponse.json(result, { status: result.ok ? 200 : 400 });
 }

@@ -1,6 +1,6 @@
 "use client";
 import { AiOutlineQrcode } from "react-icons/ai";
-import { Button } from "@heroui/react";
+import { Button, toast } from "@heroui/react";
 import Image from "next/image";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useAtomValue } from "jotai";
@@ -17,6 +17,7 @@ import {
 	subscribeSiteLinkMode,
 	type SiteLinkMode,
 } from "@/lib/client/site-link";
+import { FLOATING_ACTION_TRANSITION_CLASS } from "./ui/ui.constants";
 
 /**
  * 悬浮按钮（Jotai 订阅版）：
@@ -111,10 +112,20 @@ export const FloatingActions = memo(function FloatingActions({
 	}, [supportsHover]);
 
 	const goToGithub = useCallback(() => {
-		window.open("https://github.com/dengxiwang/go-nav", "_blank", "noopener,noreferrer");
+		window.open(
+			"https://github.com/dengxiwang/go-nav",
+			"_blank",
+			"noopener,noreferrer",
+		);
 	}, []);
 	const toggleSiteLinkMode = useCallback(() => {
-		setStoredSiteLinkMode(siteLinkMode === "intranet" ? "public" : "intranet");
+		const nextMode = siteLinkMode === "intranet" ? "public" : "intranet";
+		setStoredSiteLinkMode(nextMode);
+		if (nextMode === "public") {
+			toast.info("已切换到公网模式");
+		} else {
+			toast("已切换到内网模式");
+		}
 	}, [siteLinkMode]);
 
 	const qrPanelOpenClass = showQrPanel
@@ -124,7 +135,7 @@ export const FloatingActions = memo(function FloatingActions({
 		? "[@media(hover:hover)]:group-hover:pointer-events-auto [@media(hover:hover)]:group-hover:translate-x-0 -mr-2 [@media(hover:hover)]:group-hover:opacity-100"
 		: "";
 	const qrPanelPositionClass =
-		"absolute bottom-0 right-[calc(100%+1.5rem)] z-10 translate-x-2 opacity-0 transition-all duration-200";
+		`absolute bottom-0 right-[calc(100%+1.5rem)] z-10 translate-x-2 opacity-0 ${FLOATING_ACTION_TRANSITION_CLASS} duration-200`;
 
 	return (
 		<div className="fixed bottom-8 right-6 z-50 flex flex-col items-center gap-3">
@@ -133,7 +144,7 @@ export const FloatingActions = memo(function FloatingActions({
 				isIconOnly
 				aria-label="回到顶部"
 				variant="tertiary"
-				className={`shadow bg-(--primary-foreground) rounded-full transition-all duration-300 [@media(hover:hover)]:hover:-translate-y-0.5 ${
+				className={`shadow bg-(--primary-foreground) rounded-full ${FLOATING_ACTION_TRANSITION_CLASS} duration-300 [@media(hover:hover)]:hover:-translate-y-0.5 ${
 					showTop
 						? "pointer-events-auto opacity-100"
 						: "pointer-events-none translate-y-2 opacity-0"
@@ -189,7 +200,7 @@ export const FloatingActions = memo(function FloatingActions({
 						aria-controls="floating-actions-qr-panel"
 						aria-expanded={showQrPanel}
 						variant="tertiary"
-						className="shadow bg-(--primary-foreground) rounded-full transition-all duration-300 [@media(hover:hover)]:hover:-translate-y-0.5"
+						className={`shadow bg-(--primary-foreground) rounded-full ${FLOATING_ACTION_TRANSITION_CLASS} duration-300 [@media(hover:hover)]:hover:-translate-y-0.5`}
 						onPress={toggleQrPanel}
 					>
 						<AiOutlineQrcode />
@@ -203,11 +214,16 @@ export const FloatingActions = memo(function FloatingActions({
 					aria-label={`当前${getSiteLinkModeLabel(siteLinkMode)}模式，点击切换`}
 					isIconOnly
 					variant="tertiary"
-					className="shadow bg-(--primary-foreground) rounded-full transition-all duration-300 [@media(hover:hover)]:hover:-translate-y-0.5"
+					className={`shadow bg-(--primary-foreground) rounded-full ${FLOATING_ACTION_TRANSITION_CLASS} duration-300 [@media(hover:hover)]:hover:-translate-y-0.5`}
 					onPress={toggleSiteLinkMode}
 				>
 					{siteLinkMode === "intranet" ? (
-						<svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="size-5">
+						<svg
+							viewBox="0 0 24 24"
+							fill="none"
+							aria-hidden="true"
+							className="size-5"
+						>
 							<circle cx="6" cy="18" r="2.2" fill="currentColor" />
 							<circle cx="12" cy="6" r="2.2" fill="currentColor" />
 							<circle cx="18" cy="18" r="2.2" fill="currentColor" />
@@ -219,8 +235,19 @@ export const FloatingActions = memo(function FloatingActions({
 							/>
 						</svg>
 					) : (
-						<svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="size-5">
-							<circle cx="12" cy="12" r="8.5" stroke="currentColor" strokeWidth="1.8" />
+						<svg
+							viewBox="0 0 24 24"
+							fill="none"
+							aria-hidden="true"
+							className="size-5"
+						>
+							<circle
+								cx="12"
+								cy="12"
+								r="8.5"
+								stroke="currentColor"
+								strokeWidth="1.8"
+							/>
 							<path
 								d="M3.8 12h16.4M12 3.8c2.3 2.2 3.6 5.1 3.6 8.2s-1.3 6-3.6 8.2c-2.3-2.2-3.6-5.1-3.6-8.2s1.3-6 3.6-8.2Z"
 								stroke="currentColor"
@@ -238,7 +265,7 @@ export const FloatingActions = memo(function FloatingActions({
 				isIconOnly
 				aria-label="打开项目 GitHub"
 				variant="tertiary"
-				className="shadow bg-(--primary-foreground) rounded-full transition-all duration-300 [@media(hover:hover)]:hover:-translate-y-0.5"
+				className={`shadow bg-(--primary-foreground) rounded-full ${FLOATING_ACTION_TRANSITION_CLASS} duration-300 [@media(hover:hover)]:hover:-translate-y-0.5`}
 				onPress={goToGithub}
 			>
 				<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">

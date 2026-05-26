@@ -1,8 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { usePathname } from "next/navigation";
 import { useAtomValue, useSetAtom } from "jotai";
-import { activeIdAtom, categoriesAtom } from "@/lib/store/site";
+import {
+	activeIdAtom,
+	categoriesAtom,
+	showSubcategoryTabsAtom,
+} from "@/lib/store/site";
 
 /** 滚动停止后再同步侧栏选中态，避免滚动过程中频繁改 selectedKeys */
 const SCROLL_END_DELAY = 140;
@@ -11,9 +16,68 @@ const JUMP_GUARD_MAX_MS = 3600;
 /** 跳转滚动停止后多久解除保护 */
 const JUMP_GUARD_END_DELAY = 220;
 const ACTIVE_TOP_OFFSET = 120;
+const SCROLL_SIGNAL_EVENTS = ["scroll", "resize"] as const;
 
 // 模块级共享抑制标志：跳转后短时间内禁用滚动检测，避免把 activeId 冲回去
 const jumpGuard = { scrolling: false };
+let activeJumpGuardCleanup: (() => void) | null = null;
+
+function listenWindowScrollSignals(listener: () => void) {
+	if (typeof window === "undefined") return () => {};
+
+	for (const eventName of SCROLL_SIGNAL_EVENTS) {
+		window.addEventListener(eventName, listener, { passive: true });
+	}
+
+	return () => {
+		for (const eventName of SCROLL_SIGNAL_EVENTS) {
+			window.removeEventListener(eventName, listener);
+		}
+	};
+}
+
+function startJumpGuard() {
+	activeJumpGuardCleanup?.();
+	jumpGuard.scrolling = true;
+
+	if (typeof window === "undefined") {
+		const cleanup = () => {
+			if (activeJumpGuardCleanup !== cleanup) return;
+			activeJumpGuardCleanup = null;
+			jumpGuard.scrolling = false;
+		};
+		activeJumpGuardCleanup = cleanup;
+		return cleanup;
+	}
+
+	let guardEndTimer: ReturnType<typeof setTimeout> | null = null;
+	let guardMaxTimer: ReturnType<typeof setTimeout> | null = null;
+	let cleanupSignals = () => {};
+
+	const release = () => {
+		const isCurrentGuard = activeJumpGuardCleanup === release;
+		cleanupSignals();
+		if (guardEndTimer) clearTimeout(guardEndTimer);
+		if (guardMaxTimer) clearTimeout(guardMaxTimer);
+		guardEndTimer = null;
+		guardMaxTimer = null;
+		if (!isCurrentGuard) return;
+		activeJumpGuardCleanup = null;
+		jumpGuard.scrolling = false;
+	};
+
+	const scheduleRelease = () => {
+		if (guardEndTimer) clearTimeout(guardEndTimer);
+		guardEndTimer = setTimeout(release, JUMP_GUARD_END_DELAY);
+	};
+
+	cleanupSignals = listenWindowScrollSignals(scheduleRelease);
+	scheduleRelease();
+	guardMaxTimer = setTimeout(release, JUMP_GUARD_MAX_MS);
+	activeJumpGuardCleanup = release;
+
+	return release;
+}
 
 /**
  * 绑定滚动监听并将当前活跃分类 id 写入 activeIdAtom。
@@ -22,25 +86,51 @@ const jumpGuard = { scrolling: false };
  * 因此滚动带来的 activeId 更新不会重渲染调用者（通常是 AppLayout）。
  */
 export function useActiveSectionWriter() {
+	const pathname = usePathname();
 	const categories = useAtomValue(categoriesAtom);
+	const showSubcategoryTabs = useAtomValue(showSubcategoryTabsAtom);
 	const setActiveId = useSetAtom(activeIdAtom);
 	const scrollEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const lastScrollYRef = useRef(0);
 
-	const topIds = useMemo(() => categories.map((c) => c.id), [categories]);
+	const parentIds = useMemo(() => categories.map((c) => c.id), [categories]);
+
+	const trackedIds = useMemo(() => {
+		if (showSubcategoryTabs) {
+			return parentIds;
+		}
+		const ids: string[] = [];
+		const walk = (nodes: typeof categories) => {
+			for (const node of nodes) {
+				ids.push(node.id);
+				if (node.children && node.children.length > 0) {
+					walk(node.children);
+				}
+			}
+		};
+		walk(categories);
+		return ids;
+	}, [categories, parentIds, showSubcategoryTabs]);
 
 	useEffect(() => {
 		if (typeof window === "undefined") return;
-		if (topIds.length === 0) return;
+		if (pathname !== "/") return;
+		if (trackedIds.length === 0) return;
+
 		lastScrollYRef.current = window.scrollY;
-
-		const elements = topIds
-			.map((id) => document.getElementById(id))
-			.filter((el): el is HTMLElement => el !== null);
-
-		if (elements.length === 0) return;
+		const topIdSet = new Set(trackedIds);
+		const getElements = () => {
+			const main = document.querySelector("main");
+			if (!main) return [] as HTMLElement[];
+			return Array.from(
+				main.querySelectorAll<HTMLElement>(".category-anchor"),
+			).filter((el) => topIdSet.has(el.id));
+		};
 
 		const findActiveByPosition = () => {
+			const elements = getElements();
+			if (elements.length === 0) return;
+
 			const currentScrollY = window.scrollY;
 			const scrollingUp = currentScrollY < lastScrollYRef.current - 1;
 			lastScrollYRef.current = currentScrollY;
@@ -49,7 +139,7 @@ export function useActiveSectionWriter() {
 			const doc = document.documentElement;
 			const nearBottom =
 				currentScrollY + window.innerHeight >= doc.scrollHeight - 6;
-			if (nearBottom && !scrollingUp) {
+			if (nearBottom && !scrollingUp && currentScrollY > ACTIVE_TOP_OFFSET) {
 				const lastId = elements[elements.length - 1]?.id;
 				if (lastId) {
 					setActiveId((prev) => (prev === lastId ? prev : lastId));
@@ -86,44 +176,74 @@ export function useActiveSectionWriter() {
 			scrollEndTimerRef.current = setTimeout(flushActive, SCROLL_END_DELAY);
 		};
 
-		const rawHash = window.location.hash.startsWith("#")
-			? window.location.hash.slice(1)
-			: "";
-		let initialHashId = rawHash;
-		try {
-			initialHashId = decodeURIComponent(rawHash);
-		} catch {
-			initialHashId = rawHash;
-		}
+		const applyInitialState = () => {
+			const rawHash = window.location.hash.startsWith("#")
+				? window.location.hash.slice(1)
+				: "";
+			let initialHashId = rawHash;
+			try {
+				initialHashId = decodeURIComponent(rawHash);
+			} catch {
+				initialHashId = rawHash;
+			}
 
-		const hasInitialHashTarget =
-			initialHashId.length > 0 &&
-			elements.some((el) => el.id === initialHashId);
+			// 首页刷新且位于顶部时，默认选中第一个父级分类。
+			if (!rawHash && window.scrollY <= 8) {
+				const firstParentId = parentIds[0];
+				if (firstParentId) {
+					setActiveId((prev) => (prev === firstParentId ? prev : firstParentId));
+					return;
+				}
+			}
 
-		if (hasInitialHashTarget) {
-			setActiveId((prev) => (prev === initialHashId ? prev : initialHashId));
-			// 某些客户端跳转下 hash 定位时机会偏晚，主动补一次定位。
-			requestAnimationFrame(() => {
-				document
-					.getElementById(initialHashId)
-					?.scrollIntoView({ behavior: "auto", block: "start" });
-			});
-			if (scrollEndTimerRef.current) clearTimeout(scrollEndTimerRef.current);
-			scrollEndTimerRef.current = setTimeout(flushActive, SCROLL_END_DELAY * 2);
-		} else {
-			findActiveByPosition();
-		}
+			const hasInitialHashTarget =
+				initialHashId.length > 0 &&
+				getElements().some((el) => el.id === initialHashId);
 
-		window.addEventListener("scroll", scheduleAfterScrollEnd, { passive: true });
-		window.addEventListener("resize", scheduleAfterScrollEnd, { passive: true });
+			const clearUrlHash = () => {
+				if (!window.location.hash) return;
+				const cleanUrl = `${window.location.pathname}${window.location.search}`;
+				window.history.replaceState(window.history.state, "", cleanUrl);
+			};
+
+			if (hasInitialHashTarget) {
+				setActiveId((prev) => (prev === initialHashId ? prev : initialHashId));
+				// 某些客户端跳转下 hash 定位时机会偏晚，主动补一次定位。
+				requestAnimationFrame(() => {
+					getElements()
+						.find((el) => el.id === initialHashId)
+						?.scrollIntoView({ behavior: "auto", block: "start" });
+				});
+				if (scrollEndTimerRef.current) clearTimeout(scrollEndTimerRef.current);
+				scrollEndTimerRef.current = setTimeout(flushActive, SCROLL_END_DELAY * 2);
+				// 使用 hash 定位完成后，清理 URL 中的 #锚点，避免刷新后持续携带。
+				setTimeout(clearUrlHash, SCROLL_END_DELAY * 2 + 60);
+			} else {
+				findActiveByPosition();
+				// 无效 hash 也清掉，保持地址整洁。
+				if (rawHash) clearUrlHash();
+			}
+		};
+
+		let bootstrapTimer: ReturnType<typeof setTimeout> | null = null;
+		const bootstrap = () => {
+			if (getElements().length === 0) {
+				bootstrapTimer = setTimeout(bootstrap, 80);
+				return;
+			}
+			applyInitialState();
+		};
+		bootstrap();
+
+		const cleanupSignals = listenWindowScrollSignals(scheduleAfterScrollEnd);
 
 		return () => {
-			window.removeEventListener("scroll", scheduleAfterScrollEnd);
-			window.removeEventListener("resize", scheduleAfterScrollEnd);
+			cleanupSignals();
 			if (scrollEndTimerRef.current) clearTimeout(scrollEndTimerRef.current);
+			if (bootstrapTimer) clearTimeout(bootstrapTimer);
 			if (rafId) cancelAnimationFrame(rafId);
 		};
-	}, [topIds, setActiveId]);
+	}, [parentIds, pathname, trackedIds, setActiveId]);
 }
 
 /**
@@ -132,8 +252,6 @@ export function useActiveSectionWriter() {
  */
 export function useJumpToSection() {
 	const setActiveId = useSetAtom(activeIdAtom);
-	const guardMaxTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-	const guardEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const cleanupGuardRef = useRef<(() => void) | null>(null);
 
 	useEffect(() => {
@@ -147,32 +265,7 @@ export function useJumpToSection() {
 			cleanupGuardRef.current?.();
 			jumpGuard.scrolling = true;
 			setActiveId(id || undefined);
-
-			if (typeof window === "undefined") return;
-
-			const release = () => {
-				window.removeEventListener("scroll", onScrollOrResize);
-				window.removeEventListener("resize", onScrollOrResize);
-				if (guardEndTimerRef.current) clearTimeout(guardEndTimerRef.current);
-				if (guardMaxTimerRef.current) clearTimeout(guardMaxTimerRef.current);
-				guardEndTimerRef.current = null;
-				guardMaxTimerRef.current = null;
-				cleanupGuardRef.current = null;
-				jumpGuard.scrolling = false;
-			};
-
-			const onScrollOrResize = () => {
-				if (guardEndTimerRef.current) clearTimeout(guardEndTimerRef.current);
-				guardEndTimerRef.current = setTimeout(release, JUMP_GUARD_END_DELAY);
-			};
-
-			window.addEventListener("scroll", onScrollOrResize, { passive: true });
-			window.addEventListener("resize", onScrollOrResize, { passive: true });
-
-			// 立刻安排一次“滚动结束”检测；如果没有发生滚动会很快解锁。
-			onScrollOrResize();
-			guardMaxTimerRef.current = setTimeout(release, JUMP_GUARD_MAX_MS);
-			cleanupGuardRef.current = release;
+			cleanupGuardRef.current = startJumpGuard();
 		},
 		[setActiveId],
 	);

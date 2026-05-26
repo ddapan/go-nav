@@ -13,7 +13,6 @@ import {
 	AlertDialog,
 	toast,
 	Drawer,
-	Spinner,
 	cn,
 	useOverlayState,
 } from "@heroui/react";
@@ -73,6 +72,7 @@ import {
 	resolveSiteBackgroundColor,
 	toPx,
 } from "../site-icon";
+import Loading from "./loading";
 
 interface FlatCategory {
 	category: NavCategory;
@@ -498,7 +498,7 @@ function PreviewImagePicker({
 }) {
 	const fileRef = useRef<HTMLInputElement>(null);
 	const [uploading, setUploading] = useState(false);
-	const [err, setErr] = useState<string | null>(null);
+	const nav = useAtomValue(navAtom);
 
 	const onFileChosen = async (e: React.ChangeEvent<HTMLInputElement>) => {
 		const f = e.target.files?.[0];
@@ -509,15 +509,15 @@ function PreviewImagePicker({
 
 	const uploadFile = async (f: File) => {
 		setUploading(true);
-		setErr(null);
 		try {
 			const url = await uploadImageWithCompression(f, {
 				maxEdge: 1600,
 				quality: 0.84,
+				forceWebp: nav.imageUpload?.convertToWebp === true,
 			});
 			onChange(url);
 		} catch (e) {
-			setErr((e as Error).message);
+			toast.danger((e as Error).message || "预览图上传失败");
 		} finally {
 			setUploading(false);
 		}
@@ -590,7 +590,6 @@ function PreviewImagePicker({
 					onChange={onFileChosen}
 				/>
 			</div>
-			{err ? <span className="text-xs text-danger">{err}</span> : null}
 		</div>
 	);
 }
@@ -742,17 +741,7 @@ export function SitesEditor() {
 	}, [currentSites, filteredSites, selectedCategory]);
 
 	if (!isClientReady) {
-		return (
-			<div
-				className="flex flex-col items-center justify-center gap-2"
-				style={{
-					height: `calc(100dvh - 106px)`,
-				}}
-			>
-				<Spinner size="sm" />
-				<span className="text-xs text-default-500">加载中...</span>
-			</div>
-		);
+		return <Loading />;
 	}
 
 	const findCategoryById = (
@@ -773,19 +762,24 @@ export function SitesEditor() {
 		cats: NavCategory[],
 		categoryId: string,
 		updater: (sites: NavSite[]) => NavSite[],
-	): NavCategory[] =>
-		cats.map((c) => {
+	): NavCategory[] => {
+		let didUpdate = false;
+		const next = cats.map((c) => {
 			if (c.id === categoryId) {
+				didUpdate = true;
 				return { ...c, sites: updater(c.sites ?? []) };
 			}
 			if (c.children) {
-				return {
-					...c,
-					children: updateCategorySites(c.children, categoryId, updater),
-				};
+				const nextChildren = updateCategorySites(c.children, categoryId, updater);
+				if (nextChildren !== c.children) {
+					didUpdate = true;
+					return { ...c, children: nextChildren };
+				}
 			}
 			return c;
 		});
+		return didUpdate ? next : cats;
+	};
 
 	const updateSites = (updater: (sites: NavSite[]) => NavSite[]) => {
 		if (!selectedCategory) return null;
@@ -962,7 +956,7 @@ export function SitesEditor() {
 		}
 		setFetchingInfo(true);
 		try {
-			const res = await fetch("/api/fetch-website", {
+			const res = await fetch("/api/fetch-website/", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ url: editingSite.url }),
@@ -999,10 +993,13 @@ export function SitesEditor() {
 
 			if (data.faviconUrl) {
 				try {
-					const uploadRes = await fetch("/api/tools/uploadFavicon", {
+					const uploadRes = await fetch("/api/tools/uploadFavicon/", {
 						method: "POST",
 						headers: { "Content-Type": "application/json" },
-						body: JSON.stringify({ faviconUrl: data.faviconUrl }),
+						body: JSON.stringify({
+							faviconUrl: data.faviconUrl,
+							existingIconUrl: editingSite.icon,
+						}),
 					});
 					if (uploadRes.ok) {
 						const uploadData = (await uploadRes.json()) as { url: string };
@@ -1018,10 +1015,13 @@ export function SitesEditor() {
 
 			if (!editingSite?.previewImage) {
 				try {
-					const previewRes = await fetch("/api/tools/capturePreview", {
+					const previewRes = await fetch("/api/tools/capturePreview/", {
 						method: "POST",
 						headers: { "Content-Type": "application/json" },
-						body: JSON.stringify({ url: editingSite.url }),
+						body: JSON.stringify({
+							url: editingSite.url,
+							existingPreviewUrl: editingSite.previewImage,
+						}),
 					});
 					if (previewRes.ok) {
 						const previewData = (await previewRes.json()) as { url: string };
@@ -1049,10 +1049,13 @@ export function SitesEditor() {
 		}
 		setCapturingPreview(true);
 		try {
-			const res = await fetch("/api/tools/capturePreview", {
+			const res = await fetch("/api/tools/capturePreview/", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ url: editingSite.url }),
+				body: JSON.stringify({
+					url: editingSite.url,
+					existingPreviewUrl: editingSite.previewImage,
+				}),
 			});
 			if (!res.ok) {
 				const data = (await res.json().catch(() => ({}))) as { error?: string };
@@ -1283,10 +1286,10 @@ export function SitesEditor() {
 											<Table variant="secondary" aria-label="网址列表">
 												<Table.ScrollContainer>
 													<Table.Content aria-label="网址列表">
-										<Table.Header>
-											<Table.Column className="w-12">图标</Table.Column>
-											<Table.Column
-												className="min-w-28 sm:min-w-44"
+														<Table.Header>
+															<Table.Column className="w-12">图标</Table.Column>
+															<Table.Column
+																className="min-w-28 sm:min-w-44"
 																isRowHeader
 															>
 																名称
@@ -1294,7 +1297,7 @@ export function SitesEditor() {
 															<Table.Column className="min-w-60">
 																公网 URL
 															</Table.Column>
-															<Table.Column className="min-w-60">
+															<Table.Column className="min-w-48">
 																内网 URL
 															</Table.Column>
 															<Table.Column className="min-w-52">
@@ -1409,28 +1412,33 @@ export function SitesEditor() {
 										>
 											<Label>网站地址</Label>
 											<InputGroup>
-												<InputGroup.Input placeholder="https://..." />
+												<InputGroup.Input
+													placeholder="https://..."
+													style={{
+														maxWidth: `calc(100% - 161px)`,
+													}}
+												/>
 												<InputGroup.Suffix className="p-1!">
 													<div className="flex gap-1">
 														<Button
 															size="sm"
 															variant="tertiary"
-															className={"rounded-lg"}
+															className={"rounded-lg h-7 px-2 gap-1 text-xs!"}
 															isDisabled={fetchingInfo || capturingPreview}
 															onPress={fetchWebsiteInfo}
 														>
 															<BiGlobe className="size-4" />
-															获取信息
+															网站信息
 														</Button>
 														<Button
 															size="sm"
 															variant="tertiary"
-															className={"rounded-lg"}
+															className={"rounded-lg h-7 px-2 gap-1 text-xs!"}
 															isDisabled={fetchingInfo || capturingPreview}
 															onPress={captureWebsitePreview}
 														>
 															<BiImage className="size-4" />
-															获取预览图
+															预览图
 														</Button>
 													</div>
 												</InputGroup.Suffix>

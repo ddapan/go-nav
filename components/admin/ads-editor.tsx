@@ -326,21 +326,7 @@ function AdRow({
 	return (
 		<Table.Row key={ad.id} id={ad.id}>
 			<Table.Cell>
-				<div className="flex items-center gap-2">
-					{ad.image ? (
-						<div className="relative h-10 w-14 overflow-hidden rounded-lg border border-gray-200 dark:border-neutral-700">
-							{/* eslint-disable-next-line @next/next/no-img-element */}
-							<img
-								src={ad.image}
-								alt=""
-								className="h-full w-full object-cover"
-							/>
-						</div>
-					) : (
-						<div className="flex h-10 w-14 items-center justify-center rounded-lg border border-gray-200 bg-gray-100 dark:border-neutral-700 dark:bg-neutral-800">
-							<BiImage className="size-4 text-gray-300 dark:text-neutral-600" />
-						</div>
-					)}
+				<div className="flex items-center gap-2 w-max">
 					<IconPicker
 						value={ad.image ?? ""}
 						onChange={(v) => patch({ image: v })}

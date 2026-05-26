@@ -36,7 +36,7 @@ export const AppFooter = memo(function AppFooter({
 	const footerLinks = useAtomValue(footerLinksAtom);
 
 	return (
-		<footer className="w-full p-6 pt-12">
+		<footer className="w-full p-6">
 			<div>
 				<div className="flex flex-col items-center gap-8 md:flex-row md:items-start md:justify-between">
 					<div className="flex flex-col items-center gap-3 md:items-start">

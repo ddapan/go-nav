@@ -14,6 +14,18 @@ export type ThemeMode = "light" | "dark" | "system";
 export type CardStyle = "compact" | "preview";
 
 /**
+ * 上传图片处理策略
+ */
+export interface ImageUploadConfig {
+	/**
+	 * 是否尽量统一转换成 WebP
+	 * - 开启后：手动上传、远程抓取 favicon 等场景会优先转为 webp
+	 * - 适用于 png / jpg / webp / svg
+	 */
+	convertToWebp?: boolean;
+}
+
+/**
  * 布局与显示配置
  */
 export interface LayoutConfig {
@@ -59,8 +71,12 @@ export interface LayoutConfig {
 	linkTarget?: "current" | "new";
 	/** 是否自动优先访问内网地址（可达时优先） */
 	autoUseIntranet?: boolean;
-	/** 点击网站卡片时是否先进入“网址详情页” */
+	/** 点击网站卡片时是否先进入"网址详情页" */
 	enableSiteDetailPage?: boolean;
+	/** 是否在右侧使用 Tabs 展示二级分类（开启时：左侧仅展示父级分类，右侧用 Tabs 切换二级分类；关闭时：左侧树形展示父子分类，右侧平铺所有分类卡片） */
+	showSubcategoryTabs?: boolean;
+	/** 是否显示分类导航栏搜索框（开启后在左侧导航顶部显示搜索框，输入后过滤分类） */
+	showCategorySearch?: boolean;
 }
 
 /**
@@ -137,18 +153,20 @@ export interface NavCategory {
 }
 
 /**
- * 自定义代码插件（用于注入自定义 CSS / JS 片段）
- * - type="css": 代码以 <style> 注入 <head>
- * - type="js" : 代码以 <script> 注入 <body> 末尾（默认同步执行）
+ * 自定义插件（用于注入样式 / 脚本 / 资源提示）
+ * - type="css"           : code 以 <style> 注入 <head>
+ * - type="js"            : code 以内联 <script> 注入 <body> 末尾
+ * - type="resource-hint" : 生成 <link rel="preconnect|dns-prefetch" href="...">
+ * - type="external-script": 生成底部外链 <script src="...">，可附带初始化 code
  */
 export interface PluginConfig {
 	/** 插件唯一 ID */
 	id: string;
 	/** 插件显示名称 */
 	name: string;
-	/** 插件类型：自定义 CSS 或 自定义 JS */
-	type: "css" | "js";
-	/** 插件代码内容（纯文本） */
+	/** 插件类型 */
+	type: "css" | "js" | "resource-hint" | "external-script";
+	/** 代码内容（CSS / JS / 外链脚本附带的初始化代码） */
 	code: string;
 	/** 是否启用（仅启用的插件才会注入到前台页面） */
 	enabled: boolean;
@@ -156,8 +174,16 @@ export interface PluginConfig {
 	description?: string;
 	/** 排序权重（数字越小越靠前） */
 	sort?: number;
+	/** 头部资源提示 rel（仅 type="resource-hint" 有意义） */
+	resourceHintRel?: "preconnect" | "dns-prefetch";
+	/** 资源提示地址（仅 type="resource-hint" 有意义） */
+	href?: string;
+	/** 外链脚本地址（仅 type="external-script" 有意义） */
+	src?: string;
+	/** 跨域属性（resource hint / external script 可选） */
+	crossOrigin?: "" | "anonymous" | "use-credentials";
 	/**
-	 * JS 插件加载模式（仅 type="js" 有意义）
+	 * 脚本加载模式（仅 type="js" / type="external-script" 有意义）
 	 * - "sync"（默认）：同步执行，位于 body 末尾
 	 * - "defer"：使用 defer 属性，DOM 解析完成后执行
 	 * - "async"：异步执行（可能在解析过程中执行）
@@ -248,6 +274,8 @@ export interface NavConfig {
 	showRecentVisits?: boolean;
 	/** 最近访问最大显示条数 */
 	recentVisitsMax?: number;
+	/** 图片上传处理策略 */
+	imageUpload?: ImageUploadConfig;
 	/** 自定义代码插件列表（自定义 CSS / JS 注入） */
 	plugins?: PluginConfig[];
 }

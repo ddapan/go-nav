@@ -1,13 +1,24 @@
 "use client";
 
 import type { Selection } from "@heroui/react";
-import { Chip, EmptyState, ListBox, ListBoxItem } from "@heroui/react";
+import {
+	Chip,
+	EmptyState,
+	ListBox,
+	ListBoxItem,
+	SearchField,
+} from "@heroui/react";
 import type { Key } from "@heroui/react";
-import { memo, useCallback, useMemo } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAtomValue } from "jotai";
+import { pinyin } from "pinyin-pro";
 import type { NavCategory } from "@/types";
-import { activeIdAtom } from "@/lib/store/site";
+import {
+	activeIdAtom,
+	showCategorySearchAtom,
+	showSubcategoryTabsAtom,
+} from "@/lib/store/site";
 import { IconView } from "./icon-view";
 
 function countSites(category: NavCategory): number {
@@ -20,12 +31,34 @@ function countSites(category: NavCategory): number {
 	return count;
 }
 
-/**
- * 分类侧栏（Jotai 订阅版）。
- *
- * 直接订阅 activeIdAtom，滚动时只重渲染本组件，不波及上层 AppSidebar。
- * categories / onItemClick 仍由调用者注入，以便在移动端抽屉里传入"点击后关抽屉"的闭包。
- */
+function flattenCategoriesForTree(categories: NavCategory[]): NavCategory[] {
+	const result: NavCategory[] = [];
+	for (const cat of categories) {
+		result.push(cat);
+		if (cat.children && cat.children.length > 0) {
+			result.push(...cat.children);
+		}
+	}
+	return result;
+}
+
+function getPinyin(text: string): string {
+	return pinyin(text, { toneType: "none", type: "array" }).join("");
+}
+
+function getPinyinFirstLetters(text: string): string {
+	return pinyin(text, { toneType: "none", type: "array" })
+		.map((p) => p.charAt(0))
+		.join("");
+}
+
+interface CategorySearchEntry {
+	category: NavCategory;
+	text: string;
+	pinyin: string;
+	pinyinInitials: string;
+}
+
 export const CategorySidebar = memo(function CategorySidebar({
 	categories,
 	onItemClick,
@@ -34,17 +67,97 @@ export const CategorySidebar = memo(function CategorySidebar({
 	onItemClick?: (id: string) => void;
 }) {
 	const activeId = useAtomValue(activeIdAtom);
+	const showSubcategoryTabs = useAtomValue(showSubcategoryTabsAtom);
+	const showCategorySearch = useAtomValue(showCategorySearchAtom);
 	const pathname = usePathname();
 	const router = useRouter();
-	const topIds = useMemo(() => categories.map((c) => c.id), [categories]);
-	const selectedKey =
-		!activeId || !topIds.includes(activeId) ? "home" : activeId;
+	const [searchQuery, setSearchQuery] = useState("");
+	const [searchHighlightIndex, setSearchHighlightIndex] = useState(-1);
+	const searchInputRef = useRef<HTMLInputElement>(null);
+
+	const displayCategories = useMemo(
+		() =>
+			showSubcategoryTabs ? categories : flattenCategoriesForTree(categories),
+		[categories, showSubcategoryTabs],
+	);
+
+	const searchEntries = useMemo<CategorySearchEntry[]>(
+		() => {
+			if (!showCategorySearch) return [];
+			return displayCategories.map((category) => ({
+				category,
+				text: `${category.name}\u0001${category.description ?? ""}`.toLowerCase(),
+				pinyin: getPinyin(category.name).toLowerCase(),
+				pinyinInitials: getPinyinFirstLetters(category.name).toLowerCase(),
+			}));
+		},
+		[displayCategories, showCategorySearch],
+	);
+
+	const filteredCategories = useMemo(() => {
+		if (!showCategorySearch || !searchQuery.trim()) return displayCategories;
+		const q = searchQuery.trim().toLowerCase();
+		return searchEntries
+			.filter(
+				(entry) =>
+					entry.text.includes(q) ||
+					entry.pinyin.includes(q) ||
+					entry.pinyinInitials.includes(q),
+			)
+			.map((entry) => entry.category);
+	}, [displayCategories, searchEntries, searchQuery, showCategorySearch]);
+
+	const allCategoryIds = useMemo(() => {
+		const ids = new Set<string>(categories.map((c) => c.id));
+		for (const cat of categories) {
+			if (cat.children) {
+				for (const child of cat.children) {
+					ids.add(child.id);
+				}
+			}
+		}
+		return ids;
+	}, [categories]);
+
+	const parentIdByCategoryId = useMemo(() => {
+		const map = new Map<string, string>();
+		for (const cat of categories) {
+			map.set(cat.id, cat.id);
+			if (!cat.children) continue;
+			for (const child of cat.children) {
+				map.set(child.id, cat.id);
+			}
+		}
+		return map;
+	}, [categories]);
+
 	const inDetailPage = pathname.startsWith("/site/");
 
-	const selectedKeys: Selection = useMemo(
-		() => new Set([selectedKey]),
-		[selectedKey],
-	);
+	const selectedId = useMemo(() => {
+		if (inDetailPage) return null;
+		if (!activeId) {
+			return categories[0]?.id ?? null;
+		}
+		if (showSubcategoryTabs) {
+			return parentIdByCategoryId.get(activeId) ?? (categories[0]?.id ?? null);
+		}
+		if (!allCategoryIds.has(activeId)) {
+			return categories[0]?.id ?? null;
+		}
+		return activeId;
+	}, [
+		activeId,
+		allCategoryIds,
+		categories,
+		inDetailPage,
+		parentIdByCategoryId,
+		showSubcategoryTabs,
+	]);
+
+	const selectedKeys: Selection = useMemo(() => {
+		if (!selectedId) return new Set();
+		return new Set([selectedId]);
+	}, [selectedId]);
 
 	const hasAnyIcon = useMemo(
 		() => categories.some((c) => !!c.icon),
@@ -53,10 +166,23 @@ export const CategorySidebar = memo(function CategorySidebar({
 
 	const siteCounts = useMemo(() => {
 		const map = new Map<string, number>();
-		for (const c of categories) {
+		const cats = showSubcategoryTabs ? categories : displayCategories;
+		for (const c of cats) {
 			map.set(c.id, countSites(c));
 		}
 		return map;
+	}, [categories, displayCategories, showSubcategoryTabs]);
+
+	const childIds = useMemo(() => {
+		const ids = new Set<string>();
+		for (const cat of categories) {
+			if (cat.children) {
+				for (const child of cat.children) {
+					ids.add(child.id);
+				}
+			}
+		}
+		return ids;
 	}, [categories]);
 
 	const jumpTo = useCallback(
@@ -89,56 +215,147 @@ export const CategorySidebar = memo(function CategorySidebar({
 		[inDetailPage, onItemClick, router],
 	);
 
-	if (categories.length === 0) {
-		return (
-			<div className="flex items-center justify-center p-8">
-				<EmptyState className="text-center">
-					<p className="text-sm text-muted">暂无分类</p>
-				</EmptyState>
-			</div>
-		);
-	}
+	const listRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		if (!listRef.current) return;
+		const selected = listRef.current.querySelector('[data-selected="true"]');
+		if (selected) {
+			selected.scrollIntoView({ block: "nearest", behavior: "smooth" });
+		}
+	}, [selectedId]);
+
+	useEffect(() => {
+		if (!showCategorySearch || !searchQuery.trim()) {
+			setSearchHighlightIndex(-1);
+			return;
+		}
+		setSearchHighlightIndex(filteredCategories.length > 0 ? 0 : -1);
+	}, [filteredCategories.length, searchQuery, showCategorySearch]);
+
+	useEffect(() => {
+		if (searchHighlightIndex < 0 || !listRef.current) return;
+		const items = listRef.current.querySelectorAll("[role=option]");
+		const target = items[searchHighlightIndex] as HTMLElement | undefined;
+		if (target) {
+			target.scrollIntoView({ block: "nearest", behavior: "smooth" });
+		}
+	}, [searchHighlightIndex]);
+
+	const handleSearchKeyDown = useCallback(
+		(e: React.KeyboardEvent) => {
+			if (e.key === "Escape") {
+				searchInputRef.current?.blur();
+				return;
+			}
+			if (!showCategorySearch || filteredCategories.length === 0) return;
+			if (e.key === "ArrowDown") {
+				e.preventDefault();
+				setSearchHighlightIndex((prev) =>
+					prev < filteredCategories.length - 1 ? prev + 1 : 0,
+				);
+			} else if (e.key === "ArrowUp") {
+				e.preventDefault();
+				setSearchHighlightIndex((prev) =>
+					prev > 0 ? prev - 1 : filteredCategories.length - 1,
+				);
+			} else if (e.key === "Enter" && searchHighlightIndex >= 0) {
+				e.preventDefault();
+				e.stopPropagation();
+				(
+					e.nativeEvent as KeyboardEvent & {
+						stopImmediatePropagation?: () => void;
+					}
+				).stopImmediatePropagation?.();
+				const target = filteredCategories[searchHighlightIndex];
+				if (target) jumpTo(target.id);
+			}
+		},
+		[showCategorySearch, filteredCategories, searchHighlightIndex, jumpTo],
+	);
 
 	return (
-		<ListBox
-			aria-label="导航菜单"
-			selectedKeys={selectedKeys}
-			selectionMode="single"
-			onSelectionChange={(keys) => {
-				const first = [...keys][0];
-				if (first) jumpTo(first);
-			}}
-			className="px-2 *:px-4 *:font-medium"
-		>
-			{categories.map((c) => {
-				const siteCount = siteCounts.get(c.id) ?? 0;
-				return (
-					<ListBoxItem
-						key={c.id}
-						id={c.id}
-						textValue={c.name}
-						className="gap-2.5 rounded-xl data-[selected=true]:bg-(--primary-foreground)! data-[selected=true]:shadow!"
+		<div className="h-full flex flex-col">
+			{showCategorySearch && (
+				<div className="px-3 pt-2 shrink-0 mb-2">
+					<SearchField
+						value={searchQuery}
+						onChange={setSearchQuery}
+						className="w-full"
 					>
-						{hasAnyIcon ? (
-							<span
-								className="inline-flex h-4 w-4 shrink-0 items-center justify-center text-sm leading-none"
-								aria-hidden
-							>
-								<IconView icon={c.icon} size={16} textClassName="w-full" />
-							</span>
-						) : (
-							<GridIcon />
-						)}
-						<span className="flex-1 truncate">{c.name}</span>
-						{siteCount > 0 && (
-							<Chip size="sm" variant="soft" className="ml-auto">
-								{siteCount}
-							</Chip>
-						)}
-					</ListBoxItem>
-				);
-			})}
-		</ListBox>
+						<SearchField.Group>
+							<SearchField.SearchIcon />
+							<SearchField.Input
+								ref={searchInputRef}
+								placeholder="搜索分类..."
+								onKeyDown={handleSearchKeyDown}
+							/>
+							<SearchField.ClearButton className="absolute right-0 cursor-pointer" />
+						</SearchField.Group>
+					</SearchField>
+				</div>
+			)}
+			<div ref={listRef} className="flex-1 overflow-y-auto">
+				{filteredCategories.length === 0 ? (
+					<div className="flex items-center justify-center p-8">
+						<EmptyState className="text-center">
+							<p className="text-sm text-muted">暂无分类</p>
+						</EmptyState>
+					</div>
+				) : (
+					<ListBox
+						aria-label="导航菜单"
+						selectedKeys={selectedKeys}
+						selectionMode="single"
+						onSelectionChange={(keys) => {
+							const first = [...keys][0];
+							if (first) {
+								setSearchHighlightIndex(-1);
+								jumpTo(first);
+							}
+						}}
+						className="px-2 *:px-4 *:font-medium"
+					>
+						{filteredCategories.map((c, index) => {
+							const isChild = childIds.has(c.id);
+							const siteCount = siteCounts.get(c.id) ?? 0;
+							const isSearchHighlighted = index === searchHighlightIndex;
+							return (
+								<ListBoxItem
+									key={c.id}
+									id={c.id}
+									textValue={c.name}
+									className={`gap-2.5 rounded-xl data-[selected=true]:bg-(--primary-foreground)! data-[selected=true]:shadow! ${
+										isChild ? "pl-8 text-sm" : ""
+									} ${isSearchHighlighted ? "bg-default" : ""}`}
+								>
+									{hasAnyIcon || isChild ? (
+										<span
+											className="inline-flex h-4 w-4 shrink-0 items-center justify-center text-sm leading-none"
+											aria-hidden
+										>
+											<IconView
+												icon={c.icon}
+												size={16}
+												textClassName="w-full"
+											/>
+										</span>
+									) : (
+										<GridIcon />
+									)}
+									<span className="flex-1 truncate">{c.name}</span>
+									{siteCount > 0 && (
+										<Chip size="sm" variant="soft" className="ml-auto">
+											{siteCount}
+										</Chip>
+									)}
+								</ListBoxItem>
+							);
+						})}
+					</ListBox>
+				)}
+			</div>
+		</div>
 	);
 });
 

@@ -1,13 +1,13 @@
 import { notFound, redirect } from "next/navigation";
-import { SiteShell } from "@/components/site-shell";
 import { getNav, getWebsiteData } from "@/lib/config";
-import { collectSiteDetailEntries, findSiteDetailEntryBySlug } from "@/lib/site-detail";
+import {
+	collectSiteDetailEntries,
+	findSiteDetailEntryBySlug,
+} from "@/lib/site-detail";
 
 interface SiteDetailRouteProps {
 	params: Promise<{ slug: string }>;
 }
-
-export const dynamicParams = false;
 
 const STATIC_PLACEHOLDER_SLUG = "__placeholder__";
 
@@ -43,5 +43,5 @@ export default async function SiteDetailRoute(props: SiteDetailRouteProps) {
 		redirect(matched.path);
 	}
 
-	return <SiteShell detailSlug={matched.slug} />;
+	return null;
 }

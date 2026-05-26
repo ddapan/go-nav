@@ -44,6 +44,16 @@ function getThemeScript(mode: string) {
 })()`;
 }
 
+function getScrollRestorationScript() {
+	return `(function(){
+  try{
+    if("scrollRestoration" in window.history){
+      window.history.scrollRestoration="manual";
+    }
+  }catch(_e){}
+})()`;
+}
+
 export default function RootLayout({
 	children,
 }: Readonly<{
@@ -55,10 +65,10 @@ export default function RootLayout({
 		<html lang="zh-CN" className="h-full antialiased" suppressHydrationWarning>
 			<head>
 				<script
-					dangerouslySetInnerHTML={{ __html: getThemeScript(themeMode) }}
+					dangerouslySetInnerHTML={{ __html: getScrollRestorationScript() }}
 				/>
 				<script
-					dangerouslySetInnerHTML={{ __html: `if("scrollRestoration"in history)history.scrollRestoration="manual";window.scrollTo(0,0)` }}
+					dangerouslySetInnerHTML={{ __html: getThemeScript(themeMode) }}
 				/>
 			</head>
 			<body className="min-h-full flex flex-col">

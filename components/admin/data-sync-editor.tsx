@@ -143,6 +143,16 @@ function formatLogTime(at: string): string {
 	return date.toLocaleTimeString("zh-CN", { hour12: false });
 }
 
+function syncLogMessageClass(level: DataSyncProgressEvent["level"]): string {
+	if (level === "error") {
+		return "text-danger/80";
+	}
+	if (level === "success") {
+		return "text-success/80";
+	}
+	return "text-default/80";
+}
+
 function Field({
 	label,
 	description,
@@ -268,7 +278,9 @@ export function DataSyncEditor() {
 			setRunning(key);
 			try {
 				if (enableLogModal) {
-					setSyncLogTitle(`${providerLabel(provider)} ${actionLabel(action)}日志`);
+					setSyncLogTitle(
+						`${providerLabel(provider)} ${actionLabel(action)}日志`,
+					);
 					setSyncLogOpen(true);
 					setSyncLogRunning(true);
 					setSyncLogStatus("idle");
@@ -290,7 +302,9 @@ export function DataSyncEditor() {
 							message?: string;
 						};
 						throw new Error(
-							data.message || data.error || `${actionLabel(action)}失败 (${res.status})`,
+							data.message ||
+								data.error ||
+								`${actionLabel(action)}失败 (${res.status})`,
 						);
 					}
 					if (!res.body) {
@@ -357,7 +371,8 @@ export function DataSyncEditor() {
 					throw new Error(result.message || `${actionLabel(action)}失败`);
 				}
 				const successMessage =
-					result.message || `${providerLabel(provider)} ${actionLabel(action)}成功`;
+					result.message ||
+					`${providerLabel(provider)} ${actionLabel(action)}成功`;
 				toast.success(successMessage);
 				if (enableLogModal) {
 					setSyncLogStatus("success");
@@ -524,7 +539,7 @@ export function DataSyncEditor() {
 				<section className="flex flex-col gap-3">
 					<div className="flex flex-col gap-1">
 						<h3 className="text-sm font-semibold text-gray-900 dark:text-neutral-100">
-							数据同步
+							远端备份
 						</h3>
 						<p className="text-xs text-default-500">
 							GitHub 同步为目录文件模式（website.yaml/json、nav.yaml/json、
@@ -576,10 +591,10 @@ export function DataSyncEditor() {
 							<Card.Header>
 								<div className="flex items-center gap-2">
 									<BiGitBranch className="size-5 text-blue-600 dark:text-blue-300" />
-									<div>
+									<div className="flex-1 overflow-hidden">
 										<Card.Title>GitHub 同步</Card.Title>
-										<Card.Description>
-											按目录同步 `website.yaml/json`、`nav.yaml/json` 和
+										<Card.Description className="truncate">
+											按目录增量同步 `website.yaml/json`、`nav.yaml/json` 和
 											`uploads/*`。
 										</Card.Description>
 									</div>
@@ -665,11 +680,11 @@ export function DataSyncEditor() {
 										</TextField>
 										<p className="text-xs text-default-500">
 											<span
-												className={
+												className={`${
 													draft.github.hasToken
 														? "text-success"
 														: "text-warning"
-												}
+												} font-medium`}
 											>
 												{draft.github.hasToken
 													? "已保存 Token，留空则保持不变"
@@ -707,9 +722,9 @@ export function DataSyncEditor() {
 							<Card.Header>
 								<div className="flex items-center gap-2">
 									<BiSync className="size-5 text-emerald-600 dark:text-emerald-300" />
-									<div>
+									<div className="flex-1 overflow-hidden">
 										<Card.Title>WebDAV 同步</Card.Title>
-										<Card.Description>
+										<Card.Description className="truncate">
 											适配坚果云、Nextcloud、Alist 等支持 WebDAV 的存储。
 										</Card.Description>
 									</div>
@@ -789,11 +804,11 @@ export function DataSyncEditor() {
 										</TextField>
 										<p className="text-xs text-default-500">
 											<span
-												className={
+												className={`${
 													draft.webdav.hasPassword
 														? "text-success"
 														: "text-warning"
-												}
+												} font-medium`}
 											>
 												{draft.webdav.hasPassword
 													? "已保存密码，留空则保持不变"
@@ -832,19 +847,19 @@ export function DataSyncEditor() {
 					<p className="mb-1.5 font-semibold">操作提示</p>
 					<ul className="list-disc list-inside space-y-1">
 						<li>
-							GitHub 同步会把当前服务器 data 中的 website/nav 配置与 uploads
-							文件按目录写入远端（例如配置为 backups 时会写入
-							<code>backups/website.yaml</code>、<code>backups/website.json</code>、
-							<code>backups/nav.yaml</code>、<code>backups/nav.json</code>、
-							<code>backups/uploads/*</code>）
+							GitHub 推送会增量提交当前服务器 data 中有变更的 website/nav 配置与
+							uploads 文件（例如配置为 backups 时路径为
+							<code>backups/website.yaml</code>、
+							<code>backups/website.json</code>、<code>backups/nav.yaml</code>、
+							<code>backups/nav.json</code>、<code>backups/uploads/*</code>）
 						</li>
 						<li>
 							WebDAV 推送会在备份目录下生成一个新文件（例如
 							<code>go-nav-data-20260519093300.zip</code>），不会覆盖旧备份
 						</li>
 						<li>
-							WebDAV 拉取需先在弹窗中选择备份文件，恢复后会覆盖本机
-							website/nav 配置，并写入备份中的 uploads 文件
+							WebDAV 拉取需先在弹窗中选择备份文件，恢复后会覆盖本机 website/nav
+							配置，并写入备份中的 uploads 文件
 						</li>
 						<li>
 							GitHub Token 获取路径：GitHub 右上角头像 → Settings → Developer
@@ -879,18 +894,18 @@ export function DataSyncEditor() {
 							<Modal.Heading>{syncLogTitle || "同步日志"}</Modal.Heading>
 						</Modal.Header>
 						<Modal.Body className="space-y-3">
-							<div className="flex items-center justify-between rounded-md border border-default-200 bg-default-50 px-3 py-2 text-xs">
+							<div className="flex items-center justify-between font-medium rounded-xl border border-default-200 bg-default-50 px-3 py-2 text-xs">
 								<span className="text-default-600">
 									{syncLogRunning ? "正在执行中..." : "执行完成"}
 								</span>
 								<span
-									className={
+									className={`${
 										syncLogStatus === "success"
 											? "text-success"
 											: syncLogStatus === "error"
 												? "text-danger"
 												: "text-default-500"
-									}
+									}`}
 								>
 									{syncLogStatus === "success"
 										? "成功"
@@ -901,32 +916,32 @@ export function DataSyncEditor() {
 							</div>
 							<div
 								ref={syncLogBodyRef}
-								className="h-80 overflow-y-auto rounded-lg border border-default-200 bg-black px-3 py-2 font-mono text-xs leading-5 text-green-300"
+								className="sync-log-terminal h-80 overflow-y-auto rounded-lg border border-slate-700/80 bg-[#0b1220] px-3 py-2 shadow-inner"
 							>
 								{syncLogs.length === 0 ? (
-									<div className="flex h-full items-center justify-center text-default-300">
+									<div className="flex h-full items-center justify-center text-slate-500">
 										<Spinner size="sm" />
 									</div>
 								) : (
 									syncLogs.map((item, index) => (
-										<p
-											key={`${item.at}-${index}`}
-											className={
-												item.level === "error"
-													? "text-red-300"
-													: item.level === "success"
-														? "text-emerald-300"
-														: "text-sky-200"
-											}
-										>
-											[{formatLogTime(item.at)}] {item.message}
-										</p>
+										<div key={`${item.at}-${index}`} className="flex gap-2">
+											<span className="shrink-0 text-slate-500">
+												[{formatLogTime(item.at)}]
+											</span>
+											<span className={syncLogMessageClass(item.level)}>
+												{item.message}
+											</span>
+										</div>
 									))
 								)}
 							</div>
 						</Modal.Body>
 						<Modal.Footer>
-							<Button variant="secondary" slot="close" isDisabled={syncLogRunning}>
+							<Button
+								variant="secondary"
+								slot="close"
+								isDisabled={syncLogRunning}
+							>
 								关闭
 							</Button>
 						</Modal.Footer>

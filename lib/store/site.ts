@@ -7,6 +7,7 @@
 import { atom } from "jotai";
 import type { Key } from "@heroui/react";
 import type { LayoutConfig, NavCategory, NavConfig, NavSite, WebsiteData } from "@/types";
+import { pluginHasRenderablePayload } from "@/lib/plugin-config";
 
 /** 站点默认布局配置，和原 AppLayout 中保持一致 */
 export const DEFAULT_LAYOUT: Required<LayoutConfig> = {
@@ -32,6 +33,8 @@ export const DEFAULT_LAYOUT: Required<LayoutConfig> = {
 	linkTarget: "new",
 	autoUseIntranet: false,
 	enableSiteDetailPage: false,
+	showSubcategoryTabs: true,
+	showCategorySearch: false,
 };
 
 const EMPTY_WEBSITE: WebsiteData = { categories: [] };
@@ -57,6 +60,9 @@ const EMPTY_NAV: NavConfig = {
 		engines: [],
 	},
 	ads: [],
+	imageUpload: {
+		convertToWebp: false,
+	},
 };
 
 // ─── 根原子（只读） ──────────────────────────────────────────────────────
@@ -71,11 +77,11 @@ export const layoutAtom = atom<Required<LayoutConfig>>((get) => ({
 	...(get(siteNavAtom).layout ?? {}),
 }));
 
-export const categoriesAtom = atom((get) => get(siteWebsiteDataAtom).categories);
+export const categoriesAtom = atom((get) => get(siteWebsiteDataAtom).categories ?? []);
 
 export const enabledAdsAtom = atom((get) =>
-	get(siteNavAtom)
-		.ads.filter((a) => a.enabled)
+	(get(siteNavAtom).ads ?? [])
+		.filter((a) => a.enabled)
 		.sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0)),
 );
 
@@ -118,7 +124,7 @@ export const navQrCodeTextAtom = atom((get) => get(siteNavAtom).qrCodeText);
 export const footerLinksAtom = atom(
 	(get) => get(siteNavAtom).footerLinks ?? EMPTY_FOOTER_LINKS,
 );
-export const searchConfigAtom = atom((get) => get(siteNavAtom).search);
+export const searchConfigAtom = atom((get) => get(siteNavAtom).search ?? EMPTY_NAV.search);
 export const adsAspectRatioAtom = atom(
 	(get) => get(siteNavAtom).adsAspectRatio,
 );
@@ -130,11 +136,19 @@ export const recentVisitsMaxAtom = atom(
 	(get) => get(siteNavAtom).recentVisitsMax ?? 20,
 );
 
+export const showSubcategoryTabsAtom = atom(
+	(get) => get(layoutAtom).showSubcategoryTabs !== false,
+);
+
+export const showCategorySearchAtom = atom(
+	(get) => get(layoutAtom).showCategorySearch === true,
+);
+
 /** 启用的插件列表（按 sort 排序），供 layout 注入使用 */
 export const enabledPluginsAtom = atom((get) => {
 	const plugins = get(siteNavAtom).plugins ?? [];
 	return plugins
-		.filter((p) => p.enabled && typeof p.code === "string" && p.code.length > 0)
+		.filter(pluginHasRenderablePayload)
 		.sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
 });
 
