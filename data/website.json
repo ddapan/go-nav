@@ -20,7 +20,7 @@
               "tags": [
                 "服务器"
               ],
-              "previewImage": "/uploads/preview-www-rainyun-com-m2mhxq.webp"
+              "previewImage": "/uploads/preview-www-rainyun-com-4f54b4d1778f.webp"
             },
             {
               "id": "baidu",
@@ -34,7 +34,7 @@
                 "中文搜索",
                 "入口"
               ],
-              "previewImage": "/uploads/preview-www-baidu-com-ilvkim.webp"
+              "previewImage": "/uploads/preview-www-baidu-com-d3a91cb7c2fd.webp"
             },
             {
               "id": "zhihu",
@@ -48,7 +48,7 @@
                 "社区",
                 "知乎"
               ],
-              "previewImage": "/uploads/preview-www-zhihu-com-5yo9zq.webp"
+              "previewImage": "/uploads/preview-www-zhihu-com-cfe46b45d56f.webp"
             },
             {
               "id": "weibo",
@@ -62,7 +62,7 @@
                 "社交",
                 "资讯"
               ],
-              "previewImage": "/uploads/preview-weibo-com-nlxlu7.webp"
+              "previewImage": "/uploads/preview-weibo-com-0979011fc451.webp"
             },
             {
               "id": "xiaohongshu",
@@ -78,7 +78,7 @@
               ],
               "bgColor": "#FF3333",
               "iconPadding": "4",
-              "previewImage": "/uploads/preview-www-xiaohongshu-com-x65f5j.webp"
+              "previewImage": "/uploads/preview-www-xiaohongshu-com-30535469e8e0.webp"
             },
             {
               "title": "404导航",
@@ -107,7 +107,7 @@
                 "铁路",
                 "出行"
               ],
-              "previewImage": "/uploads/preview-www-12306-cn-pc5d3j.webp"
+              "previewImage": "/uploads/preview-www-12306-cn-9d5cc59ca591.webp"
             },
             {
               "id": "amap",
@@ -128,14 +128,14 @@
               "title": "支付宝",
               "description": "支付宝，全球领先的独立第三方支付平台，致力于为广大用户提供安全快速的电子支付/网上支付/安全支付/手机支付体验，及转账收款/水电煤缴费/信用卡还款/AA收款等生活服务应用。",
               "url": "https://www.alipay.com",
-              "icon": "/uploads/favicon-h4oyl6.png",
+              "icon": "/uploads/favicon-465f8649fbc4.png",
               "tags": [
                 "支付",
                 "支付宝",
                 "生活服务",
                 "金融"
               ],
-              "previewImage": "/uploads/preview-www-alipay-com-53p0uv.webp"
+              "previewImage": "/uploads/preview-www-alipay-com-d626d44d7027.webp"
             },
             {
               "id": "wechat-official",
@@ -149,7 +149,7 @@
                 "小程序",
                 "运营"
               ],
-              "previewImage": "/uploads/preview-mp-weixin-qq-com-snk75s.webp"
+              "previewImage": "/uploads/preview-mp-weixin-qq-com-19e9c4eb2bf6.webp"
             }
           ]
         },
@@ -163,7 +163,7 @@
               "url": "https://yz.chsi.com.cn/",
               "icon": "/uploads/favicon-0a38ok.ico",
               "tags": [],
-              "previewImage": "/uploads/preview-yz-chsi-com-cn-l7bn95.webp"
+              "previewImage": "/uploads/preview-yz-chsi-com-cn-d89161afd174.webp"
             },
             {
               "title": "统一身份认证系统",
@@ -171,7 +171,7 @@
               "url": "https://webvpn.ujn.edu.cn/portal",
               "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABgUlEQVR4nMxTTUsCURQ9jqMz06CWpk4UQ0IGCVKBUWvd1dpFm/5Au1b9BLctatm2HyAELQwqCNxUMpDYF6GSX2mjgzloYPOeoESryU1n8d59l3fOffe+e1kYkPaVfln7ghlIDhblRNhiIWQ/r2Na6JsSeO9YUNF5MCSyWTIB4RAugzExtgBLlkR8EZGAC6lsHbElD06VGjbDXiQzNePsRqGhwy3a4HXYET+8w9FOCCJnhbinDARKrS5O0iVsr89Q1bV5F92dvBUTdiseKp/UrmpdRA1BIkSCDVM4OHuF2u5Rh1LQ6IV8vYNV2Ul9yZsqteMRCVvLXuq7yDZGAgTRkOdHbo9VI6rAUsE5N0ftXLkN2SOgZrzk+kkd1YDgKveB8/s6bFYG6Zcm3lQdlWYXmXwLHMvQFItGLWaneKSfVfz6hRXZAWmSg2jkGvAJWPCLOL4sImjsG8FJ+Jx2aJ1Bt7qEYVxYsHvbj8k9/AWpvO0fNBJDpooMhlkQDuFS5jjj/A0AAP//iK2Z5wAAAAZJREFUAwAT9ofyYvYBwQAAAABJRU5ErkJggg==",
               "tags": [],
-              "previewImage": "/uploads/preview-webvpn-ujn-edu-cn-eezr0t.webp"
+              "previewImage": "/uploads/preview-webvpn-ujn-edu-cn-cfb71c0fe701.webp"
             }
           ]
         }
@@ -222,14 +222,14 @@
               "title": "豆包",
               "description": "Seedance 2.0 视频生成模型现已全面接入豆包，现在登录即可免费使用！豆包 是你的 AI 聊天智能对话问答助手，写作文案翻译编程工具。豆包为你答疑解惑，提供灵感，辅助创作，也可以和你畅聊任何你感兴趣的话题",
               "url": "https://www.doubao.com",
-              "icon": "/uploads/favicon-m4iwsx.png",
+              "icon": "/uploads/favicon-534e945ae0c2.png",
               "tags": [
                 "AI",
                 "豆包",
                 "写作",
                 "助手"
               ],
-              "previewImage": "/uploads/preview-www-doubao-com-cxs3oe.webp"
+              "previewImage": "/uploads/preview-www-doubao-com-810a1ba71b46.webp"
             },
             {
               "id": "tongyi",
@@ -243,7 +243,7 @@
                 "阿里",
                 "大模型"
               ],
-              "previewImage": "/uploads/preview-tongyi-aliyun-com-r49cn3.webp"
+              "previewImage": "/uploads/preview-tongyi-aliyun-com-75b560a9e8fc.webp"
             },
             {
               "id": "yiyan",
@@ -257,7 +257,7 @@
                 "百度",
                 "写作"
               ],
-              "previewImage": "/uploads/preview-yiyan-baidu-com-7d89k8.webp"
+              "previewImage": "/uploads/preview-yiyan-baidu-com-5afa9d7b1f21.webp"
             },
             {
               "id": "spark",
@@ -271,7 +271,7 @@
                 "星火",
                 "办公"
               ],
-              "previewImage": "/uploads/preview-xinghuo-xfyun-cn-hbsong.webp"
+              "previewImage": "/uploads/preview-xinghuo-xfyun-cn-872f4d06cbb5.webp"
             },
             {
               "id": "chatglm",
@@ -285,7 +285,7 @@
                 "清言",
                 "对话"
               ],
-              "previewImage": "/uploads/preview-chatglm-cn-slbmjh.webp"
+              "previewImage": "/uploads/preview-chatglm-cn-39a6c2cded1e.webp"
             },
             {
               "title": "大模型服务平台百炼控制台",
@@ -301,7 +301,7 @@
               "url": "https://lovable.dev/projects/7dfaa234-9a75-48e7-a307-a2efe7a7b531",
               "icon": "/uploads/favicon-uitlsq.svg",
               "tags": [],
-              "previewImage": "/uploads/preview-lovable-dev-6vnszu.webp"
+              "previewImage": "/uploads/preview-lovable-dev-cfb71c0fe701.webp"
             },
             {
               "title": "2025年最新热门的AI图像生成和设计工具",
@@ -309,7 +309,7 @@
               "url": "https://gongke.net/categories/ai-image-design",
               "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACpElEQVR4nKRTW0hUURQ9j7l3xpnRxpnUfIwFJlgJktoDCkL6MKIMP5TAEkFE0CJGKugjOiEFQkRJVFr0UaGQFBiBFgURFAn5IYgkJtUoTpKO8/DOfZ5zuowOecuv2l/77Mdi7bX3sYH/NPRngHMAObHG+ZM6/NsHeG0OWgrNRkgAWy0UAdguwvqJ5VR+kpCNeQVjbZGwv99/vnvKApBq1h5VlzGAT2HMfIAzAWMbUDX0PK3xxb3RjodNspLZ4BAjQxWe6RuQEJYE4CaQ6fCl3hM1GOkXRUG5bzB9kFKXZrcbu+3IOaQqiyWO5uHJ/qNzJydHc5+SOZhIMkg1h6637MAi7sUQHfe1355JMZu/2X7L7TQKFV0LM1W/kBV4HLKIeJmsjKFqWR3ysvdOqvnbFVI+ffVSl6pm7J0JZndFo/6SWGJrKwEccUKQRcQPgUCaJz1/cCbBawsFlO9y25sShlzADOTjAHFBiHdSPf2srG4A4tdgQ+kA0SxrxFqRU0l4WfW1c5JsZBxUZG9zJFz4aja4p0dVvDsjcf/3bZ2ButhSgSsE9qWtHcGWBNCFmAy94OOZvpwf47seZBdPcEpZm8O18J6qOVFFYy/ftYwMLy6lL44tzEsWDQggqLK3VZelDeOxaF7z4aFitbL72F1FcfcxzVMTTYSrJA3W26DjgMMRzyVvq4x1D+lZ44hP1J2vqS6+oZAtmCk3giDHPKsvlOE4wqxWEKTPR/rKT5tLgysLNBnw5AMA/eeWEknyhDm3c06FTGAImBq2EOM2n1m8WQAZU1Is19lT8UmwaDCwIiSVdUcR0j2blil2QsAcq/ygeWXm90AUI+iESC4DIM8EgPpfI9QBjg/tB6VQBC5ODQ7xmjOnJk1sg1QCwZYROLuuBv9qvwAAAP//6cNv6gAAAAZJREFUAwAGsSqs556DfgAAAABJRU5ErkJggg==",
               "tags": [],
-              "previewImage": "/uploads/preview-gongke-net-tv07pu.webp"
+              "previewImage": "/uploads/preview-gongke-net-cfb71c0fe701.webp"
             }
           ]
         },
@@ -387,7 +387,7 @@
             {
               "id": "tencent-video",
               "title": "腾讯视频",
-              "description": "腾讯视频官方网站，提供最新热门电视剧、电影、综艺、动漫、纪录片等高清正版视频在线观看。海量独家内容持续更新，涵盖国产剧、美剧、韩剧、院线大片、热门综艺，支持超清流畅播放，尽在腾讯视频，当前热播《NBA季后赛·骑士vs尼克斯》《主角》《仙逆》，支持高清在线观看。",
+              "description": "腾讯视频官方网站，提供最新热门电视剧、电影、综艺、动漫、纪录片等高清正版视频在线观看。海量独家内容持续更新，涵盖国产剧、美剧、韩剧、院线大片、热门综艺，支持超清流畅播放，尽在腾讯视频，当前热播《吞噬星空》《奋斗吧人生-演员篇》《主角》，支持高清在线观看。",
               "url": "https://v.qq.com",
               "icon": "/uploads/favicon-ooatj1.ico",
               "tags": [
@@ -411,14 +411,14 @@
                 "电视剧"
               ],
               "bgColor": "#25DB50",
-              "previewImage": "/uploads/preview-www-iqiyi-com-lr56tm.webp"
+              "previewImage": "/uploads/preview-www-iqiyi-com-e6002ada3cca.webp"
             },
             {
               "id": "youku",
               "title": "优酷",
               "description": "视频服务平台,提供视频播放,视频发布,视频搜索,视频分享",
               "url": "https://www.youku.com",
-              "icon": "/uploads/favicon-5fy8y8.png",
+              "icon": "/uploads/favicon-eabc7cdd4448.png",
               "tags": [
                 "视频",
                 "优酷",
@@ -426,7 +426,7 @@
                 "综艺"
               ],
               "iconPadding": "6",
-              "previewImage": "/uploads/preview-www-youku-com-f8s0ac.webp"
+              "previewImage": "/uploads/preview-www-youku-com-9d49fb7f0db0.webp"
             },
             {
               "id": "mgtv",
@@ -440,7 +440,7 @@
                 "综艺",
                 "电视剧"
               ],
-              "previewImage": "/uploads/preview-www-mgtv-com-1qapxi.webp"
+              "previewImage": "/uploads/preview-www-mgtv-com-5960ff8daa4b.webp"
             },
             {
               "id": "cctv",
@@ -454,15 +454,15 @@
                 "新闻",
                 "电视"
               ],
-              "previewImage": "/uploads/preview-www-cctv-com-kfai9y.webp"
+              "previewImage": "/uploads/preview-www-cctv-com-9f1a0b58aa6c.webp"
             },
             {
               "title": "硬核指南",
               "description": "硬核指南，专注收录免费且优质的影音娱乐网站，精选影音、二次元、音乐、游戏、壁纸、电子书的免费网站和APP，让你的娱乐生活「硬核」起来！硬核指南，够高清才是真硬核！",
               "url": "https://yinghezhinan.com/",
-              "icon": "/uploads/favicon-r5nngt.webp",
+              "icon": "/uploads/favicon-46c9a0d54248.webp",
               "tags": [],
-              "previewImage": "/uploads/preview-yinghezhinan-com-f02yse.webp"
+              "previewImage": "/uploads/preview-yinghezhinan-com-19b9f35f5a28.webp"
             },
             {
               "title": "爱壹帆-海量高清视频免费在线观看",
@@ -506,7 +506,7 @@
               ],
               "bgColor": "#000000",
               "iconPadding": "4",
-              "previewImage": "/uploads/preview-www-douyin-com-f3q755.webp"
+              "previewImage": "/uploads/preview-www-douyin-com-e818af5254c2.webp"
             },
             {
               "id": "kuaishou",
@@ -521,7 +521,7 @@
                 "社区"
               ],
               "bgColor": "#F07730",
-              "previewImage": "/uploads/preview-www-kuaishou-com-6c8qk7.webp"
+              "previewImage": "/uploads/preview-www-kuaishou-com-775da4939239.webp"
             },
             {
               "id": "xigua",
@@ -543,7 +543,7 @@
               "url": "https://www.bilibili.com/",
               "icon": "/uploads/favicon-1e4ce3.ico",
               "tags": [],
-              "previewImage": "/uploads/preview-www-bilibili-com-zta9ji.webp"
+              "previewImage": "/uploads/preview-www-bilibili-com-1b27467ac20a.webp"
             }
           ]
         },
@@ -557,7 +557,7 @@
               "url": "https://music.gdstudio.org/",
               "icon": "/uploads/favicon-njf562.ico",
               "tags": [],
-              "previewImage": "/uploads/preview-music-gdstudio-org-qck8wp.webp"
+              "previewImage": "/uploads/preview-music-gdstudio-org-cfb71c0fe701.webp"
             }
           ]
         },
@@ -569,7 +569,7 @@
               "title": "微信读书",
               "description": "微信读书提供海量正版书籍、小说、漫画、公众号、听书，多设备同步实现跨屏阅读。与微信好友一起发现更多精品好书，随时交流感想，让阅读不再孤独。",
               "url": "https://weread.qq.com/web/shelf",
-              "icon": "/uploads/favicon-1wkcy4.png",
+              "icon": "/uploads/favicon-a972e484288e.png",
               "tags": [],
               "previewImage": "/uploads/preview-weread-qq-com-2f6iyu.webp"
             }
@@ -599,7 +599,7 @@
                 "人民日报",
                 "国内"
               ],
-              "previewImage": "/uploads/preview-www-people-com-cn-4g9obn.webp"
+              "previewImage": "/uploads/preview-www-people-com-cn-94fcaf521f88.webp"
             },
             {
               "id": "xinhuanet",
@@ -614,14 +614,14 @@
                 "国内"
               ],
               "iconPadding": "8",
-              "previewImage": "/uploads/preview-www-news-cn-4gwxml.webp"
+              "previewImage": "/uploads/preview-www-news-cn-c0d28b62d6ce.webp"
             },
             {
               "id": "cctv-news",
               "title": "新闻频道",
               "description": "中央广播电视总台新闻新媒体入口",
               "url": "https://news.cctv.com",
-              "icon": "/uploads/favicon-zovfix.jpg",
+              "icon": "/uploads/favicon-64a75216ca59.jpg",
               "tags": [
                 "新闻",
                 "央视",
@@ -629,7 +629,7 @@
                 "国内"
               ],
               "iconPadding": "4",
-              "previewImage": "/uploads/preview-news-cctv-com-phdwu0.webp"
+              "previewImage": "/uploads/preview-news-cctv-com-9e5ad4f6aa89.webp"
             },
             {
               "id": "chinanews",
@@ -664,7 +664,7 @@
                 "热点",
                 "资讯"
               ],
-              "previewImage": "/uploads/preview-news-qq-com-ve17pv.webp"
+              "previewImage": "/uploads/preview-news-qq-com-9a1c8f3a2ee0.webp"
             },
             {
               "id": "netease-news",
@@ -680,7 +680,7 @@
               ],
               "iconPadding": "6",
               "bgColor": "#FFFFFF",
-              "previewImage": "/uploads/preview-news-163-com-5j5dk9.webp"
+              "previewImage": "/uploads/preview-news-163-com-02c626c84f13.webp"
             },
             {
               "id": "sina-news",
@@ -694,7 +694,7 @@
                 "热点",
                 "资讯"
               ],
-              "previewImage": "/uploads/preview-news-sina-com-cn-h3fmq5.webp"
+              "previewImage": "/uploads/preview-news-sina-com-cn-cca4929e7592.webp"
             },
             {
               "id": "thepaper",
@@ -709,7 +709,7 @@
                 "时政"
               ],
               "iconPadding": "4",
-              "previewImage": "/uploads/preview-www-thepaper-cn-j26037.webp"
+              "previewImage": "/uploads/preview-www-thepaper-cn-3ad5bba532fa.webp"
             }
           ]
         },
@@ -758,7 +758,7 @@
                 "云存储",
                 "文件"
               ],
-              "previewImage": "/uploads/preview-pan-baidu-com-roj3ni.webp"
+              "previewImage": "/uploads/preview-pan-baidu-com-5533f0b11c72.webp"
             },
             {
               "id": "aliyun-drive",
@@ -772,14 +772,14 @@
                 "云存储",
                 "文件"
               ],
-              "previewImage": "/uploads/preview-www-aliyundrive-com-z5ywk4.webp"
+              "previewImage": "/uploads/preview-www-aliyundrive-com-61bd82bed4f8.webp"
             },
             {
               "id": "quark-drive",
               "title": "夸克网盘",
               "description": "夸克网盘官方网站，提供电脑PC/手机/TV/Pad全平台最新版本的客户端下载。夸克网盘作为阿里巴巴旗下的一款网盘产品，支持文件存储、下载、解压、格式转换、在线预览等功能，致力于为用户提供极致的云端存储、消费与传输体验。",
               "url": "https://pan.quark.cn",
-              "icon": "/uploads/favicon-ltbb4r.png",
+              "icon": "/uploads/favicon-54f1630e2cca.png",
               "tags": [
                 "网盘",
                 "夸克",
@@ -801,7 +801,7 @@
                 "分享"
               ],
               "iconPadding": "8",
-              "previewImage": "/uploads/preview-www-123pan-com-xum6ko.webp"
+              "previewImage": "/uploads/preview-www-123pan-com-69d3129ae901.webp"
             }
           ]
         },
@@ -821,7 +821,7 @@
                 "协作",
                 "表格"
               ],
-              "previewImage": "/uploads/preview-docs-qq-com-vrqbx1.webp"
+              "previewImage": "/uploads/preview-docs-qq-com-fa9b8233d438.webp"
             },
             {
               "id": "wps-docs",
@@ -843,14 +843,14 @@
               "title": "飞书",
               "description": "飞书是字节跳动旗下 AI 工作平台，提供一站式协同办公、组织管理、业务提效工具和深入企业场景的 AI 能力，让 AI 真能用、真落地。",
               "url": "https://www.feishu.cn",
-              "icon": "/uploads/favicon-ztzdar.png",
+              "icon": "/uploads/favicon-4ea3563724f4.png",
               "tags": [
                 "飞书",
                 "文档",
                 "办公",
                 "协作"
               ],
-              "previewImage": "/uploads/preview-www-feishu-cn-bs3zj0.webp"
+              "previewImage": "/uploads/preview-www-feishu-cn-6e51bb17c356.webp"
             },
             {
               "id": "shimo",
@@ -864,14 +864,14 @@
                 "协作",
                 "办公"
               ],
-              "previewImage": "/uploads/preview-shimo-im-wjms2c.webp"
+              "previewImage": "/uploads/preview-shimo-im-e560b67031bc.webp"
             },
             {
               "id": "yuque",
               "title": "语雀",
               "description": "优雅高效的在线文档编辑与协同工具，让每个企业轻松拥有文档中心，阿里巴巴集团内部使用多年，众多中小企业首选。主流 Office 文件全兼容，多人协同，轻松拥有团队知识库。企业文档中心化管理，各类文档井然有序，独立域名，随时随地安全获取。语雀致力于帮助每一个个体与企业，都拥有珍贵的知识财富。写文档，就用语雀！",
               "url": "https://www.yuque.com",
-              "icon": "/uploads/favicon-kyfevk.png",
+              "icon": "/uploads/favicon-8dabf6ef0831.png",
               "tags": [
                 "语雀",
                 "知识库",
@@ -881,7 +881,7 @@
               "previewImage": "/uploads/preview-www-yuque-com-m3aq61.webp"
             },
             {
-              "title": "The AI workspace that works for you. | Notion",
+              "title": "The AI workspace that works for you.",
               "description": "Build Custom Agents, search across all your apps, and automate busywork. The AI workspace where teams get more done, faster.",
               "url": "https://www.notion.so/",
               "icon": "/uploads/favicon-tkockr.ico",
@@ -911,9 +911,9 @@
               "title": "在线抠图软件",
               "description": "remove.bg在线抠图软件轻松实现一键抠图，只需上传图片，无需其他操作，即可100%自动去除图片背景。",
               "url": "https://www.remove.bg/zh",
-              "icon": "/uploads/favicon-4i4gqi.png",
+              "icon": "/uploads/favicon-a052fac478eb.png",
               "tags": [],
-              "previewImage": "/uploads/preview-www-remove-bg-wll7j6.webp"
+              "previewImage": "/uploads/preview-www-remove-bg-7190a8d36ec1.webp"
             },
             {
               "title": "RayVentura - Colab",
@@ -933,7 +933,7 @@
               "title": "SaveTube",
               "description": "Easily download and convert ( Ultra HD, 4K, 8K, 1080p, HDR ) videos from YouTube, Facebook, TikTok and many others online.",
               "url": "https://save.tube/en36/",
-              "icon": "/uploads/favicon-a1d5xe.png",
+              "icon": "/uploads/favicon-3971a9254409.png",
               "tags": [],
               "previewImage": "/uploads/preview-save-tube-xdekx5.webp"
             },
@@ -976,23 +976,23 @@
               "url": "http://www.doyoudo.com/",
               "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACyklEQVR4nHyTbUhTURjHn3PvnXPTMOe2NBcEimSUSpSUhiyQ4RAhwWFYBtWH/JCkQUQvUKOMgj4IfZCkKPpg0D6YqBEEKmkK1ZJtaVhhVpsvNbe1NZ17OU/n7q0S7VwO3HvP8/z/v/O/5/Kw/uDYxPKKohMNzdwj/SFJe8m+rLqgd6tzzvF9MlEk/KeZlu0vbjx8fvpufokPwmGISCTunZp8f1f4evGy5a2lj9UQbs12ZBfUKLX19puFpb/Q74VQaBk4vw+CJVqPoD3oPMOKCOJaBFeYO1uqqlNdqKrNy6ErihCSjwLHg0ghhIOAiuyABsAkIQCh1QQELgNmphXtqKqXnVQpcyJu3xde4EQoQI4AFZmdDtlnAEMI43v9250wd6I/bm/T6grlswsWihAkhFnRCJDUNIBpWzoMPlHfBrGQ/JsBxwRo/rbcan2dqoathN1LM4LA0MW9is+UEmGsP6vnncXcz5CIGHRSAKPBtcr0RwLXdpcWoH3hDRFiCZEIBZSlA2cb2eh/9lBzCZFAtD25BRYcw8Hyyq6mGkNBkc/vjgTCLo7nYsISASJLXgk/3KPsmHe9nDAao+0YC02c7FYh12ma21+/qq7fop7/8YH1BURRYO50QwaQQZPK0XZq7y7A3sVYR4LAIH42wD26maZS3VK2Z8VKKQaiZEgBUmWACzOp3AuT+ipArxOMCfjY4CF+KAVprsPvSlFS4tuepUEQ8VnyNEUKwsBj9ajpQWULohmNB/64JzIQX5Apq3Xq3i16kZ9qDXwb1vKeRcLJMwBd89LI+FDmHYDOEFnlngwR45pnT1fcaDl3ND3VVWsf6k5/TxiHc1bG/3Rys/GwYS0B8aCgWq0ua2zQGTzOOejo7DOqN0ltn8YVfHfH5i65HG3xerpaIPkveL1Bx8jY5NfF3lG7eeL5/TxzoXTaGl4eeDpxTDx1sM74DQAA///9To6/AAAABklEQVQDANDUKT6fkc1bAAAAAElFTkSuQmCC",
               "tags": [],
-              "previewImage": "/uploads/preview-www-doyoudo-com-0gmwxb.webp"
+              "previewImage": "/uploads/preview-www-doyoudo-com-cfb71c0fe701.webp"
             },
             {
-              "title": "我要自学网",
-              "description": "",
+              "title": "��Ҫ��ѧ��",
+              "description": "��Ҫ��ѧ��-�����Ƶ�̳�,�ṩȫ��λ����ѧϰ����3D�̳̣�ƽ��̳̣���ý�������̳̣��칫��Ϣ���̳̣���е��ƽ̳̣���վ�����̳�,������ѵ",
               "url": "https://www.51zxw.net/",
               "icon": "/uploads/favicon-v3iagj.ico",
               "tags": [],
-              "previewImage": "/uploads/preview-www-51zxw-net-u9axtf.webp"
+              "previewImage": "/uploads/preview-www-51zxw-net-78916c805f3c.webp"
             },
             {
               "title": "中国大学MOOC",
               "description": "",
               "url": "https://www.icourse163.org/home.htm?userId=1020629599#/home/course",
-              "icon": "/uploads/favicon-yqvdfe.png",
+              "icon": "/uploads/favicon-b79ce7b48da7.png",
               "tags": [],
-              "previewImage": "/uploads/preview-www-icourse163-org-vr434k.webp"
+              "previewImage": "/uploads/preview-www-icourse163-org-cfb71c0fe701.webp"
             }
           ]
         }
@@ -1013,7 +1013,7 @@
               "url": "https://member.jlc.com/center/swh/#/mainPage/orderList?isIPay=1&spm=3D.submitOrder.vieworderlist",
               "icon": "/uploads/favicon-slppqf.ico",
               "tags": [],
-              "previewImage": "/uploads/preview-member-jlc-com-6sz6p4.webp"
+              "previewImage": "/uploads/preview-member-jlc-com-cfb71c0fe701.webp"
             }
           ]
         },
@@ -1044,12 +1044,12 @@
           "name": "openpilot",
           "sites": [
             {
-              "title": "AMD Linux 驱动在 Ubuntu 上的完整指南：安装、配置与优化 — geek-blogs.com",
+              "title": "AMD Linux 驱动在 Ubuntu 上的完整指南：安装、配置与优化",
               "description": "随着 AMD 在开源社区的持续投入，其显卡（包括集成 GPU 与独立显卡）在 Linux 系统上的兼容性和性能已大幅提升。Ubuntu 作为最流行的 Linux 发行版之一，是许多用户的首选系统。本文将详细介绍 AMD 显卡驱动在 Ubuntu 上的工作原理、安装方法、配置技巧、常见问题排查及最佳实践，帮助用户充分发挥 AMD 硬件的潜力。无论你是普通桌面用户、游戏玩家，还是需要 GPU 加速的专业开发者，本文都能为你提供清晰的指导。",
               "url": "https://geek-blogs.com/blog/amd-linux-drivers-ubuntu/",
               "icon": "/uploads/favicon-cbigct.ico",
               "tags": [],
-              "previewImage": "/uploads/preview-geek-blogs-com-6ft2gz.webp"
+              "previewImage": "/uploads/preview-geek-blogs-com-cfb71c0fe701.webp"
             },
             {
               "title": "DownGit",
@@ -1062,8 +1062,8 @@
               "description": "获取视频目录 - diplus",
               "url": "https://s.apifox.cn/c3ce5ff5-754f-438c-aef2-055d85aa0391/251318097e0",
               "tags": [],
-              "icon": "/uploads/favicon-gttdo2.jpg",
-              "previewImage": "/uploads/preview-s-apifox-cn-6bvwoc.webp"
+              "icon": "/uploads/favicon-053f8ea25a22.jpg",
+              "previewImage": "/uploads/preview-s-apifox-cn-cfb71c0fe701.webp"
             }
           ]
         },
@@ -1076,7 +1076,7 @@
               "description": "",
               "url": "https://finds.synology.com/",
               "tags": [],
-              "icon": "/uploads/favicon-5y22cy.png",
+              "icon": "/uploads/favicon-b52f4d951f16.png",
               "previewImage": "/uploads/preview-finds-synology-com-gi28v2.webp"
             },
             {
@@ -1091,7 +1091,7 @@
               "url": "https://demo.synology.cn/zh-cn/dsm",
               "tags": [],
               "icon": "/uploads/favicon-ve81h7.ico",
-              "previewImage": "/uploads/preview-demo-synology-cn-065agd.webp"
+              "previewImage": "/uploads/preview-demo-synology-cn-cfb71c0fe701.webp"
             }
           ]
         },
@@ -1132,7 +1132,7 @@
               "description": "",
               "url": "https://portal.azure.com/#home",
               "tags": [],
-              "previewImage": "/uploads/preview-portal-azure-com-gx3wy0.webp"
+              "previewImage": "/uploads/preview-portal-azure-com-228b8c395e18.webp"
             },
             {
               "title": "云雾 API",
@@ -1145,7 +1145,7 @@
               "description": "Login to your account",
               "url": "https://videolingo.io/zh/dashboard/editor/37c9eea1-da8b-4f14-8b26-641e1897d4a8",
               "tags": [],
-              "previewImage": "/uploads/preview-videolingo-io-jyw7vm.webp"
+              "previewImage": "/uploads/preview-videolingo-io-cfb71c0fe701.webp"
             }
           ]
         },
@@ -1159,7 +1159,7 @@
               "url": "https://www.waveshare.net/wiki/Flash%E5%9B%BA%E4%BB%B6%E7%9A%84%E7%83%A7%E5%BD%95%E4%B8%8E%E6%93%A6%E9%99%A4",
               "tags": [],
               "icon": "/uploads/favicon-c095rk.ico",
-              "previewImage": "/uploads/preview-www-waveshare-net-txse4b.webp"
+              "previewImage": "/uploads/preview-www-waveshare-net-cfb71c0fe701.webp"
             },
             {
               "title": "ESP32",
@@ -1167,7 +1167,7 @@
               "url": "https://www.waveshare.net/wiki/ESP32-S3-Touch-AMOLED-1.8#.E5.B0.8F.E6.99.BAAI.E5.BA.94.E7.94.A8",
               "tags": [],
               "icon": "/uploads/favicon-8y3lot.ico",
-              "previewImage": "/uploads/preview-www-waveshare-net-0dx778.webp"
+              "previewImage": "/uploads/preview-www-waveshare-net-cfb71c0fe701.webp"
             },
             {
               "title": "小智AI应用参考教程",
@@ -1183,7 +1183,7 @@
               "url": "https://xiaozhi.me/",
               "tags": [],
               "icon": "/uploads/favicon-8z6xfm.ico",
-              "previewImage": "/uploads/preview-xiaozhi-me-l66n37.webp"
+              "previewImage": "/uploads/preview-xiaozhi-me-cfb71c0fe701.webp"
             }
           ]
         },
@@ -1203,7 +1203,7 @@
               "url": "https://www.chanelink.cn/material?page=9",
               "tags": [],
               "icon": "/uploads/favicon-6mbta5.ico",
-              "previewImage": "/uploads/preview-www-chanelink-cn-s7vzcd.webp"
+              "previewImage": "/uploads/preview-www-chanelink-cn-cfb71c0fe701.webp"
             },
             {
               "title": "激光切割图纸",
@@ -1237,17 +1237,17 @@
               "title": "论坛",
               "description": "PCEBTA社区 - 专注于Windows 11系统的安装、激活、驱动程序下载、优化教程与技术支持。获取最新的Win11更新资讯、解决方案和资源分享，助力每位计算机爱好者和开发者！ ,远景论坛 - 前沿科技与智慧生态的极客社区",
               "url": "http://bbs.pcbeta.com/",
-              "icon": "/uploads/favicon-5mn4zd.png",
+              "icon": "/uploads/favicon-c5eba41d8139.png",
               "tags": [],
-              "previewImage": "/uploads/preview-bbs-pcbeta-com-ueofp2.webp"
+              "previewImage": "/uploads/preview-bbs-pcbeta-com-3e49982b1a0f.webp"
             },
             {
               "title": "【转】资源测试站",
               "description": "腾讯文档-在线表格",
               "url": "https://docs.qq.com/sheet/DQWpwVU5hY1JHQWJP?tab=BB08J2",
-              "icon": "/uploads/favicon-12tngi.png",
+              "icon": "/uploads/favicon-1ab61d56b847.png",
               "tags": [],
-              "previewImage": "/uploads/preview-docs-qq-com-fnye69.webp"
+              "previewImage": "/uploads/preview-docs-qq-com-cfb71c0fe701.webp"
             },
             {
               "title": "&#x767B;&#x5F55;",
@@ -1255,7 +1255,7 @@
               "url": "https://next.itellyou.cn/Original/Index?id=7ab5f0cb-7607-4bbe-9e88-50716dc43de6",
               "icon": "/uploads/favicon-phogv5.ico",
               "tags": [],
-              "previewImage": "/uploads/preview-next-itellyou-cn-w662z2.webp"
+              "previewImage": "/uploads/preview-next-itellyou-cn-cfb71c0fe701.webp"
             },
             {
               "title": "数字笔记珍宝 OneNoteGem",
@@ -1275,9 +1275,9 @@
               "title": "缙哥哥",
               "description": "分享缙哥哥的中医药心得、武术笔记、趣闻杂谈、软件分享、无损音乐、视频短片、技术教程、摄影图片、旅游攻略、购物分享 - 原(摩尼教 - 继承火的意志)",
               "url": "https://www.dujin.org/",
-              "icon": "/uploads/favicon-kwg5ro.jpg",
+              "icon": "/uploads/favicon-996965579e86.jpg",
               "tags": [],
-              "previewImage": "/uploads/preview-www-dujin-org-x3hevn.webp"
+              "previewImage": "/uploads/preview-www-dujin-org-b43d93be6b5b.webp"
             },
             {
               "title": "Greasy Fork - 安全、实用的用户脚本大全",
@@ -1296,9 +1296,9 @@
               "title": "我不是矿神",
               "description": "群晖,威联通,铁威马,绿联UGOS,万由UNAS,飞牛fnOS,UNRAID,ESXI,PVE,OPENWRT",
               "url": "https://imnks.com/",
-              "icon": "/uploads/favicon-6a6352.png",
+              "icon": "/uploads/favicon-66bfc5a0351e.png",
               "tags": [],
-              "previewImage": "/uploads/preview-imnks-com-besph8.webp"
+              "previewImage": "/uploads/preview-imnks-com-36fb16396408.webp"
             }
           ]
         }
@@ -1326,7 +1326,7 @@
               "url": "https://tools.datapipe.top/",
               "icon": "/uploads/favicon-lgju3y.ico",
               "tags": [],
-              "previewImage": "/uploads/preview-tools-datapipe-top-0r95o1.webp"
+              "previewImage": "/uploads/preview-tools-datapipe-top-cfb71c0fe701.webp"
             },
             {
               "title": "赔钱机场 - 超便宜低价高速机场",
@@ -1341,7 +1341,7 @@
               "url": "https://login.tailscale.com/admin/machines",
               "icon": "/uploads/favicon-skb1q1.ico",
               "tags": [],
-              "previewImage": "/uploads/preview-login-tailscale-com-bjb2e7.webp"
+              "previewImage": "/uploads/preview-login-tailscale-com-1f43117a3d7c.webp"
             },
             {
               "title": "源仓库最新地址发布页",
@@ -1349,7 +1349,7 @@
               "url": "https://yckceo.vip/",
               "icon": "/uploads/favicon-7qm9rm.ico",
               "tags": [],
-              "previewImage": "/uploads/preview-yckceo-vip-hsxsvg.webp"
+              "previewImage": "/uploads/preview-yckceo-vip-ede96d3e37c5.webp"
             },
             {
               "title": "登录",
@@ -1357,7 +1357,7 @@
               "url": "https://picui.cn/user/dashboard",
               "icon": "/uploads/favicon-u596m1.ico",
               "tags": [],
-              "previewImage": "/uploads/preview-picui-cn-7yqliw.webp"
+              "previewImage": "/uploads/preview-picui-cn-aaaf1466ea2e.webp"
             },
             {
               "title": "〈软件目录〉▷Windows系统版",
@@ -1373,7 +1373,7 @@
               "url": "https://grabcad.com/library",
               "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAB0klEQVR4nMRTTUgbQRR+bzKJmwourRC3NeyGTeihUApCpbS3XNtTKT2VUkrvbUEwZ08iIuLRgwfx4MGL4jFg9KKoqBc9+RMX/4m6u/lxs0l2nNH15xC95OAHb+bNvJ9575sZAg2CQINoOAEVgyzLuqa1/7EsO8YYhBDJGaWV5a2twzFuLgmfLq0t2aVGfjMPdAboEQIbfdvHIxiPxz+6rjPtOO6w4zhTlNICY9WYLD//xlgtbRj7o7lkZ69bvuj2D93h8oxLGwDOoKq2jztOefHkJDdQr8Ru/ZX692XrLlfPV4NS8nNmaU3sp2JKbPa0KFFEUMrlytxDPdaq1de+mr4JFujNHmV9DhAQsXpjUNVoihCmCp2QoIGV0opvcuEhEhljt7dhWefLPOlmKBROhMP4lW+twCMgPNjWNE2/S1BMW1ZhwnXd9LVHIHc1I3S8AQjdDxZrVBTlVzAY6MnnrR+mWbjiIpFItNi2+U+SpC+Gsffh4NNbUcU7LusBJJkaMIkB61ywi9MoAiKR1p9NTVKKqwqXEie2hb+HTD5f7DdNc+59c7My2aH3gAffuV32C9ifN0tDWIcTwYcg1avX8/9o9AWj1BvMZs3rzhrE03+mSwAAAP//se0zeAAAAAZJREFUAwCA/qwdhdUcswAAAABJRU5ErkJggg==",
               "tags": [],
-              "previewImage": "/uploads/preview-grabcad-com-loy4ys.webp"
+              "previewImage": "/uploads/preview-grabcad-com-5eaf29e23365.webp"
             },
             {
               "title": "机械图纸_三维模型_分享平台 – 懒石网",
@@ -1388,14 +1388,14 @@
               "url": "https://fpv.wtf/",
               "icon": "/uploads/favicon-7eqegs.ico",
               "tags": [],
-              "previewImage": "/uploads/preview-fpv-wtf-xlomd1.webp"
+              "previewImage": "/uploads/preview-fpv-wtf-f2993dc25d79.webp"
             },
             {
               "title": "方方格子",
               "description": "",
               "url": "http://www.ffcell.com/",
               "tags": [],
-              "previewImage": "/uploads/preview-www-ffcell-com-yq565u.webp"
+              "previewImage": "/uploads/preview-www-ffcell-com-702ad097634f.webp"
             },
             {
               "title": "iH5专业的H5制作工具",
@@ -1403,7 +1403,7 @@
               "url": "http://www.ih5.cn/general-user/work-show/custom-case-page",
               "tags": [],
               "icon": "/uploads/favicon-eb89o4.ico",
-              "previewImage": "/uploads/preview-www-ih5-cn-6tjmz8.webp"
+              "previewImage": "/uploads/preview-www-ih5-cn-cfb71c0fe701.webp"
             },
             {
               "title": "Edgeless",
@@ -1411,7 +1411,7 @@
               "url": "https://home.edgeless.top/",
               "icon": "/uploads/favicon-8e04dt.ico",
               "tags": [],
-              "previewImage": "/uploads/preview-home-edgeless-top-l4gto3.webp"
+              "previewImage": "/uploads/preview-home-edgeless-top-cfb71c0fe701.webp"
             },
             {
               "title": "earth :: 风、气象、海洋状况的全球地图",
@@ -1419,7 +1419,7 @@
               "url": "https://earth.nullschool.net/zh-cn/#2021/07/21/1800Z/wind/surface/level/overlay=precip_3hr/orthographic=112.26,37.70,1722/loc=102.765,44.985",
               "icon": "/uploads/favicon-9qfor1.ico",
               "tags": [],
-              "previewImage": "/uploads/preview-earth-nullschool-net-n32kow.webp"
+              "previewImage": "/uploads/preview-earth-nullschool-net-8661bf229e39.webp"
             },
             {
               "title": "阿里云登录",
@@ -1427,7 +1427,7 @@
               "url": "https://dc.console.aliyun.com/?spm=5176.200137.0.0.2b166bdbM6LDC7#/info-stencil/infoStencil",
               "tags": [],
               "icon": "/uploads/favicon-fwwact.ico",
-              "previewImage": "/uploads/preview-dc-console-aliyun-co-vm0bbb.webp"
+              "previewImage": "/uploads/preview-dc-console-aliyun-co-cfb71c0fe701.webp"
             },
             {
               "title": "阿里云网站运维检测平台",
@@ -1435,7 +1435,7 @@
               "url": "https://zijian.aliyun.com/?spm=5176.100251.help.3.73664f1592OMo0#/domainDetect",
               "icon": "/uploads/favicon-5dv9v0.ico",
               "tags": [],
-              "previewImage": "/uploads/preview-zijian-aliyun-com-allyyz.webp"
+              "previewImage": "/uploads/preview-zijian-aliyun-com-cfb71c0fe701.webp"
             },
             {
               "title": "图灵机器人",
@@ -1443,7 +1443,7 @@
               "url": "http://www.tuling123.com/",
               "icon": "/uploads/favicon-xad0vm.ico",
               "tags": [],
-              "previewImage": "/uploads/preview-www-tuling123-com-f1tk7z.webp"
+              "previewImage": "/uploads/preview-www-tuling123-com-cfb71c0fe701.webp"
             },
             {
               "title": "短网址",
@@ -1451,7 +1451,7 @@
               "url": "http://www.ft12.com/",
               "tags": [],
               "icon": "/uploads/favicon-lj3g3f.ico",
-              "previewImage": "/uploads/preview-www-ft12-com-4fi29c.webp"
+              "previewImage": "/uploads/preview-www-ft12-com-138ea3bcb264.webp"
             },
             {
               "title": "草料网址二维码生成器",
@@ -1459,7 +1459,7 @@
               "url": "https://cli.im/url?4a399e13932ac0d0552168e4b2b3ce39",
               "icon": "/uploads/favicon-xsgywv.ico",
               "tags": [],
-              "previewImage": "/uploads/preview-cli-im-bae45u.webp"
+              "previewImage": "/uploads/preview-cli-im-18a75b8f0947.webp"
             },
             {
               "title": "汇总internet download manager（IDM）各类型补丁含零售版下载工具 - 『精品软件区』 - 吾爱破解 - LCG - LSG |安卓破解|病毒分析|www.52pojie.cn",
@@ -1467,7 +1467,7 @@
               "url": "https://www.52pojie.cn/thread-1161613-1-1.html",
               "icon": "/uploads/favicon-fd2ugq.ico",
               "tags": [],
-              "previewImage": "/uploads/preview-www-52pojie-cn-jx2rs0.webp"
+              "previewImage": "/uploads/preview-www-52pojie-cn-a04358335c21.webp"
             },
             {
               "title": "免费在线视频解析下载网站 - Parsevideo.com",
@@ -1482,7 +1482,7 @@
               "url": "https://xpdf.net/",
               "icon": "/uploads/favicon-jym0uw.ico",
               "tags": [],
-              "previewImage": "/uploads/preview-xpdf-net-2gvnhp.webp"
+              "previewImage": "/uploads/preview-xpdf-net-ce02b085b035.webp"
             },
             {
               "title": "GitHub",
@@ -1490,7 +1490,7 @@
               "url": "https://github.com/getaurora/download",
               "icon": "/uploads/favicon-2h3jzx.svg",
               "tags": [],
-              "previewImage": "/uploads/preview-github-com-62ib9y.webp"
+              "previewImage": "/uploads/preview-github-com-3318c794b61e.webp"
             },
             {
               "title": "多个地点ping[www.google.com]服务器",
@@ -1498,15 +1498,15 @@
               "url": "https://ping.chinaz.com/www.google.com",
               "icon": "/uploads/favicon-m8ko4c.ico",
               "tags": [],
-              "previewImage": "/uploads/preview-ping-chinaz-com-ypxab6.webp"
+              "previewImage": "/uploads/preview-ping-chinaz-com-12f9d0b3897b.webp"
             },
             {
               "title": "SMS",
               "description": "",
               "url": "https://sms-activate.org/cn/freePrice#activation",
-              "icon": "/uploads/favicon-41umgs.png",
+              "icon": "/uploads/favicon-b1f8ad1bdf5d.png",
               "tags": [],
-              "previewImage": "/uploads/preview-sms-activate-org-z5z0cd.webp"
+              "previewImage": "/uploads/preview-sms-activate-org-c82270cdb967.webp"
             },
             {
               "title": "Lattics",
@@ -1514,13 +1514,13 @@
               "url": "https://lattics.zineapi.com/zh-CN",
               "icon": "/uploads/favicon-js9ag2.ico",
               "tags": [],
-              "previewImage": "/uploads/preview-lattics-zineapi-com-sn8ezo.webp"
+              "previewImage": "/uploads/preview-lattics-zineapi-com-7beefc2aec75.webp"
             },
             {
               "title": "链滴",
               "description": "记录生活，连接点滴。",
               "url": "https://ld246.com/",
-              "icon": "/uploads/favicon-7q4ksf.png",
+              "icon": "/uploads/favicon-37f31407d5c6.png",
               "tags": [],
               "previewImage": "/uploads/preview-ld246-com-tgsrpp.webp"
             },
@@ -1530,7 +1530,7 @@
               "url": "https://www.kms.pub/rank.html",
               "tags": [],
               "icon": "/uploads/favicon-lil4ru.ico",
-              "previewImage": "/uploads/preview-www-kms-pub-1zcuh4.webp"
+              "previewImage": "/uploads/preview-www-kms-pub-cfb71c0fe701.webp"
             },
             {
               "title": "蒲公英管理-认证源",
@@ -1538,7 +1538,7 @@
               "url": "https://console.sdwan.oray.com/zh/member/authSource",
               "icon": "/uploads/favicon-632tm7.ico",
               "tags": [],
-              "previewImage": "/uploads/preview-console-sdwan-oray-c-snj7x3.webp"
+              "previewImage": "/uploads/preview-console-sdwan-oray-c-e74898575a8a.webp"
             },
             {
               "title": "熊猫无损音乐官网-全网无损音乐mp3歌曲免费下载网站",
@@ -1552,7 +1552,7 @@
               "url": "https://www.xiequ.cn/redirect.aspx?act=DlFree.aspx",
               "icon": "/uploads/favicon-tq9n0n.ico",
               "tags": [],
-              "previewImage": "/uploads/preview-www-xiequ-cn-i2kzxs.webp"
+              "previewImage": "/uploads/preview-www-xiequ-cn-06ac4746e91c.webp"
             },
             {
               "title": "果核剥壳",
@@ -1560,23 +1560,23 @@
               "url": "https://www.ghxi.com/",
               "icon": "/uploads/favicon-lsrhjk.ico",
               "tags": [],
-              "previewImage": "/uploads/preview-www-ghxi-com-84faqp.webp"
+              "previewImage": "/uploads/preview-www-ghxi-com-032c6a9aeed5.webp"
             },
             {
               "title": "小霸王",
               "description": "魂斗罗，超级玛丽，热血足球，三国志，合金弹头，拳皇。这些小时候的回忆，黑白电视机前玩着小霸王游戏机的那种感觉令人怀念，希望大家可以找回童年的快乐",
               "url": "https://www.yikm.net/",
-              "icon": "/uploads/favicon-jggkg2.png",
+              "icon": "/uploads/favicon-696c49eb1d05.png",
               "tags": [],
-              "previewImage": "/uploads/preview-www-yikm-net-xo3pvs.webp"
+              "previewImage": "/uploads/preview-www-yikm-net-4e767ea4c303.webp"
             },
             {
               "title": "Freeimage.host",
               "description": "Freeimage.host is a rocket fast free image hosting service. Upload image anonymously, Upload images to albums, Direct image links, BBCode and HTML thumbnails. No registration required.",
               "url": "https://freeimage.host/",
-              "icon": "/uploads/favicon-c1ydqy.png",
+              "icon": "/uploads/favicon-120e9ab77115.png",
               "tags": [],
-              "previewImage": "/uploads/preview-freeimage-host-af6kqp.webp"
+              "previewImage": "/uploads/preview-freeimage-host-b58d0f2cef3e.webp"
             },
             {
               "title": "油猴脚本",
@@ -1584,7 +1584,7 @@
               "url": "https://soujiaoben.org/#/search",
               "icon": "/uploads/favicon-87xqjz.ico",
               "tags": [],
-              "previewImage": "/uploads/preview-soujiaoben-org-6azsak.webp"
+              "previewImage": "/uploads/preview-soujiaoben-org-cfb71c0fe701.webp"
             },
             {
               "title": "获取API",
@@ -1598,9 +1598,9 @@
               "title": "淘宝/天猫",
               "description": "",
               "url": "https://www.yangmaodang.club/category/al/tbtm/",
-              "icon": "/uploads/favicon-bdsdyr.png",
+              "icon": "/uploads/favicon-02b32de02b74.png",
               "tags": [],
-              "previewImage": "/uploads/preview-www-yangmaodang-club-c5vvhg.webp"
+              "previewImage": "/uploads/preview-www-yangmaodang-club-e4578f3ad795.webp"
             }
           ]
         },
@@ -1614,7 +1614,7 @@
               "url": "https://www.alipansou.com/",
               "tags": [],
               "icon": "/uploads/favicon-h0s1xk.ico",
-              "previewImage": "/uploads/preview-www-alipansou-com-llr55y.webp"
+              "previewImage": "/uploads/preview-www-alipansou-com-56d24d9091f6.webp"
             },
             {
               "title": "小纸条-开放纯粹的资源网站",
@@ -1634,15 +1634,15 @@
               "url": "https://www.chidao365.com/forum-zygc-1.html",
               "tags": [],
               "icon": "/uploads/favicon-oj61fq.ico",
-              "previewImage": "/uploads/preview-www-chidao365-com-f69gvu.webp"
+              "previewImage": "/uploads/preview-www-chidao365-com-cfb71c0fe701.webp"
             },
             {
               "title": "书格",
               "description": "有品格的数字图书馆, 书格, 每个人都能自由地看到我们的文明",
               "url": "https://www.shuge.org/",
               "tags": [],
-              "icon": "/uploads/favicon-r4xroh.png",
-              "previewImage": "/uploads/preview-www-shuge-org-wf95af.webp"
+              "icon": "/uploads/favicon-32c4b7179a4e.png",
+              "previewImage": "/uploads/preview-www-shuge-org-5b6256cc490b.webp"
             },
             {
               "title": "阿里云盘资源导航",
@@ -1662,7 +1662,7 @@
               "description": "千帆搜索，是一个资源超丰富的聚合网盘资源搜索网站。千帆搜索支持百度网盘搜索、阿里云盘搜索、蓝奏云搜索、天翼云盘搜索、夸克网盘搜索、迅雷云盘搜索。可以搜索影视资源、音乐资源、图片资源、电子书资源、软件资源、小说资源等等。只需要输入关键词，即可一键聚合搜索全网所有网盘资源，搜索结果直接提供网盘分享链接，大家可保存至自己的网盘或者直接下载！",
               "url": "https://pan.qianfan.app/",
               "tags": [],
-              "previewImage": "/uploads/preview-pan-qianfan-app-bmfjvi.webp"
+              "previewImage": "/uploads/preview-pan-qianfan-app-8347719b8b2f.webp"
             },
             {
               "title": "PanSearch | 网盘资源搜索 | 网盘搜索引擎",
@@ -1688,20 +1688,21 @@
               "url": "https://fanyi.baidu.com/#en/zh/",
               "tags": [],
               "icon": "/uploads/favicon-c3lljo.ico",
-              "previewImage": "/uploads/preview-fanyi-baidu-com-0lru0w.webp"
+              "previewImage": "/uploads/preview-fanyi-baidu-com-26a345ded414.webp"
             },
             {
               "title": "Google",
               "description": "",
               "url": "https://translate.google.cn/?hl=zh-CN&tab=TT",
               "tags": [],
-              "previewImage": "/uploads/preview-translate-google-cn-e1wyyg.webp"
+              "previewImage": "/uploads/preview-translate-google-cn-cfb71c0fe701.webp"
             },
             {
               "title": "CNKI翻译助手",
               "description": "",
               "url": "http://dict.cnki.net/essential/C038.html",
-              "tags": []
+              "tags": [],
+              "previewImage": "/uploads/preview-dict-cnki-net-5deab301ced8.webp"
             },
             {
               "title": "rbook",
@@ -1709,7 +1710,7 @@
               "url": "http://gongjushu.cnki.net/RBook/",
               "tags": [],
               "icon": "/uploads/favicon-qgmr2m.ico",
-              "previewImage": "/uploads/preview-gongjushu-cnki-net-ml6p5i.webp"
+              "previewImage": "/uploads/preview-gongjushu-cnki-net-2b078cd28067.webp"
             }
           ]
         }
@@ -1728,9 +1729,9 @@
               "title": "缺氧各种常用模块及数据大全 · 语雀",
               "description": "作者：大叔追云彩",
               "url": "https://www.yuque.com/books/share/5d74ca6b-9d70-4dbb-9770-8ae80e6bc488",
-              "icon": "/uploads/favicon-8l2sr3.png",
+              "icon": "/uploads/favicon-8dabf6ef0831.png",
               "tags": [],
-              "previewImage": "/uploads/preview-www-yuque-com-bvz76b.webp"
+              "previewImage": "/uploads/preview-www-yuque-com-ca825a04dc4e.webp"
             },
             {
               "title": "oniCalc",
@@ -1745,7 +1746,7 @@
               "url": "https://mapsnotincluded.org/",
               "icon": "/uploads/favicon-0ohsnm.ico",
               "tags": [],
-              "previewImage": "/uploads/preview-mapsnotincluded-org-7ehj04.webp"
+              "previewImage": "/uploads/preview-mapsnotincluded-org-7d848534675d.webp"
             },
             {
               "title": "教程",
@@ -1761,7 +1762,7 @@
               "url": "https://spacestore-config-editor.pages.dev/",
               "icon": "/uploads/favicon-s0kvl6.ico",
               "tags": [],
-              "previewImage": "/uploads/preview-spacestore-config-ed-rcqh09.webp"
+              "previewImage": "/uploads/preview-spacestore-config-ed-83b0d4713294.webp"
             },
             {
               "title": "缺氧 Wiki",
@@ -1789,7 +1790,7 @@
               "url": "https://www.pttime.org/signup.php",
               "icon": "/uploads/favicon-ekk6yf.ico",
               "tags": [],
-              "previewImage": "/uploads/preview-www-pttime-org-qs9i4q.webp"
+              "previewImage": "/uploads/preview-www-pttime-org-727257447815.webp"
             },
             {
               "title": "BTSCHOOL :: 登录 比特校园PT小乐园",
@@ -1805,7 +1806,7 @@
               "url": "https://m-team.cc/",
               "icon": "/uploads/favicon-jd7xw3.ico",
               "tags": [],
-              "previewImage": "/uploads/preview-m-team-cc-lroja4.webp"
+              "previewImage": "/uploads/preview-m-team-cc-57fa3f30dbf5.webp"
             },
             {
               "title": "NicePT :: 登錄",
@@ -1849,7 +1850,7 @@
               "url": "https://hdsky.me/login.php",
               "icon": "/uploads/favicon-hsajpf.ico",
               "tags": [],
-              "previewImage": "/uploads/preview-hdsky-me-p7772z.webp"
+              "previewImage": "/uploads/preview-hdsky-me-cd0625a107e0.webp"
             },
             {
               "title": "CHDBits :: 登录",

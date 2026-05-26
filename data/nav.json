@@ -57,7 +57,10 @@
     "defaultIconPadding": "8",
     "linkTarget": "new",
     "cardStyle": "compact",
-    "enableSiteDetailPage": false
+    "enableSiteDetailPage": true,
+    "showCategorySearch": true,
+    "showSearch": false,
+    "showSubcategoryTabs": false
   },
   "adsAspectRatio": "4/3",
   "showAds": false
